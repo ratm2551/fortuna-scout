@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fortuna Talent Scout Dashboard</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">F95</div>
+      <div class="brand-text">
+        <strong>Fortuna</strong>
+        <span>Talent Scout</span>
+      </div>
+    </div>
+    <nav id="nav">
+      <a href="#/dashboard" data-route="dashboard">📊 Dashboard</a>
+      <a href="#/spieler" data-route="spieler">👥 Spielerdatenbank</a>
+      <a href="#/talentpool" data-route="talentpool">⭐ Talentpool</a>
+      <a href="#/vergleich" data-route="vergleich">⚖️ Spielervergleich</a>
+      <a href="#/probetraining" data-route="probetraining">🏃 Probetraining</a>
+      <div class="nav-section">Live-Daten</div>
+      <a href="#/bundesliga" data-route="bundesliga">🇩🇪 Bundesliga (StatsBomb)</a>
+    </nav>
+    <div class="sidebar-footer">
+      <select id="roleSelect" title="Benutzerrolle">
+        <option value="Koordinator">Koordinator</option>
+        <option value="Scout">Scout</option>
+        <option value="Trainer">Trainer</option>
+        <option value="Administrator">Administrator</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" id="resetData">Demodaten zurücksetzen</button>
+      <div class="version">Prototyp v1.0</div>
+    </div>
+  </aside>
+  <main id="main" class="main"></main>
+</div>
+<div id="modal-root"></div>
+<script src="data.js"></script>
+<script src="statsbomb.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
