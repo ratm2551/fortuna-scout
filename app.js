@@ -246,7 +246,7 @@ function viewSpielerDetail(id, tab) {
       </div>
     </div>
     <div class="tabs">
-      ${[["profil", "Profil"], ["bewertung", "Bewertung"], ["berichte", `Berichte (${p.berichte.length})`], ["videos", `Videos (${p.videos.length})`], ["entwicklung", "Entwicklungsmonitor"]]
+      ${[["profil", "Profil"], ["bewertung", "Bewertung"], ["berichte", `Berichte (${p.berichte.length})`], ["videos", `Videos (${p.videos.length})`], ["entwicklung", "Entwicklungsmonitor"], ["extern", `Externe Quellen (${(p.externeQuellen || []).length})`]]
       .map(([k, t]) => `<button class="${aktiverTab === k ? "active" : ""}" onclick="viewSpielerDetail('${p.id}','${k}')">${t}</button>`).join("")}
     </div>
     <div id="tab-inhalt"></div>`;
@@ -257,6 +257,7 @@ function viewSpielerDetail(id, tab) {
   else if (aktiverTab === "berichte") inhalt.innerHTML = tabBerichte(p);
   else if (aktiverTab === "videos") inhalt.innerHTML = tabVideos(p);
   else if (aktiverTab === "entwicklung") inhalt.innerHTML = tabEntwicklung(p);
+  else if (aktiverTab === "extern") inhalt.innerHTML = tabExterneQuellen(p);
 }
 window.viewSpielerDetail = viewSpielerDetail;
 
@@ -367,6 +368,99 @@ function tabBerichte(p) {
         <div class="report-section"><div class="rs-label">${s}</div><p>${esc(b.abschnitte[s])}</p></div>`).join("")}
     </div>`).join("") : `<div class="card"><div class="empty">Noch keine Berichte – Spieler wurde noch nicht gesichtet.</div></div>`}`;
 }
+
+const EXTERNE_QUELLEN = [
+  { name: "Transfermarkt", url: q => `https://www.transfermarkt.de/schnellsuche/ergebnis/schnellsuche?query=${q}` },
+  { name: "FotMob", url: q => `https://www.fotmob.com/search?term=${q}` },
+  { name: "Sofascore", url: q => `https://www.sofascore.com/search?q=${q}` },
+  { name: "FBref", url: q => `https://fbref.com/en/search/search.fcgi?search=${q}` },
+  { name: "Google", url: q => `https://www.google.com/search?q=${q}+fussball` },
+];
+
+function tabExterneQuellen(p) {
+  const suchbegriff = encodeURIComponent(`${p.vorname} ${p.nachname} ${p.verein || ""}`.trim());
+  const eintraege = p.externeQuellen || [];
+  return `
+  <div class="card mb">
+    <h3>Spieler auf externen Seiten nachschlagen</h3>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">
+      Öffnet die Suche nach "${esc(p.vorname)} ${esc(p.nachname)}" auf der jeweiligen Seite in einem neuen Tab.
+      Werte, die du dort siehst, kannst du unten manuell erfassen — so bleibt alles an einem Ort.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${EXTERNE_QUELLEN.map(q => `<a class="btn btn-secondary btn-sm" href="${q.url(suchbegriff)}" target="_blank" rel="noopener">${esc(q.name)} öffnen ↗</a>`).join("")}
+    </div>
+  </div>
+  <div class="flex-between mb">
+    <h3 style="margin:0">Erfasste externe Werte</h3>
+    <button class="btn btn-sm" onclick="modalNeueExterneQuelle('${p.id}')">+ Wert erfassen</button>
+  </div>
+  ${eintraege.length ? `<div class="card"><table><thead><tr>
+    <th>Quelle</th><th>Feld</th><th>Wert</th><th>Datum</th><th></th>
+  </tr></thead><tbody>
+    ${eintraege.map((e, i) => `<tr>
+      <td><span class="tag">${esc(e.quelle)}</span></td>
+      <td>${esc(e.feld)}</td>
+      <td><strong>${esc(e.wert)}</strong></td>
+      <td style="color:var(--muted)">${fmtDatum(e.datum)}</td>
+      <td>
+        ${e.feld === "Marktwert" ? `<button class="btn btn-sm btn-secondary" onclick="externWertUebernehmen('${p.id}',${i})">In Profil übernehmen</button>` : ""}
+        <button class="btn btn-sm btn-ghost" style="color:var(--rot);border-color:var(--rot)" onclick="externWertLoeschen('${p.id}',${i})">Löschen</button>
+      </td>
+    </tr>`).join("")}
+  </tbody></table></div>` : `<div class="card"><div class="empty">Noch keine externen Werte erfasst.</div></div>`}
+  `;
+}
+
+function modalNeueExterneQuelle(id) {
+  const QUELLEN_NAMEN = EXTERNE_QUELLEN.map(q => q.name).concat("Wyscout", "Sonstige");
+  zeigeModal(`
+    <h2>Externen Wert erfassen</h2>
+    <form id="modal-form">
+      <div class="form-grid">
+        ${feld("Quelle *", "quelle", "text", "required", QUELLEN_NAMEN)}
+        ${feld("Feld *", "feld", "text", 'required placeholder="z.B. Marktwert, xG, FotMob-Rating"')}
+        ${feld("Wert *", "wert", "text", 'required placeholder="z.B. 3,5 Mio € oder 7.2"')}
+        ${feld("Datum *", "datum", "date", `required value="${HEUTE.toISOString().slice(0, 10)}"`)}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+        <button type="submit" class="btn">Speichern</button>
+      </div>
+    </form>`, fd => {
+    const p = findSpieler(id);
+    if (!p.externeQuellen) p.externeQuellen = [];
+    p.externeQuellen.push({ quelle: fd.get("quelle"), feld: fd.get("feld"), wert: fd.get("wert"), datum: fd.get("datum") });
+    speichern();
+    schliesseModal();
+    viewSpielerDetail(id, "extern");
+  });
+}
+window.modalNeueExterneQuelle = modalNeueExterneQuelle;
+
+function externWertLoeschen(id, idx) {
+  const p = findSpieler(id);
+  p.externeQuellen.splice(idx, 1);
+  speichern();
+  viewSpielerDetail(id, "extern");
+}
+window.externWertLoeschen = externWertLoeschen;
+
+function externWertUebernehmen(id, idx) {
+  const p = findSpieler(id);
+  const eintrag = p.externeQuellen[idx];
+  const zahl = +String(eintrag.wert).replace(/[^\d,.]/g, "").replace(",", ".");
+  if (!isNaN(zahl) && zahl > 0) {
+    const multi = /mio/i.test(eintrag.wert) ? 1000000 : /tsd|k€/i.test(eintrag.wert) ? 1000 : 1;
+    p.marktwert = Math.round(zahl * multi);
+    speichern();
+    toast(`Marktwert von ${eintrag.quelle} übernommen: ${fmtMarktwert(p.marktwert)}`);
+    viewSpielerDetail(id, "extern");
+  } else {
+    toast("Wert konnte nicht als Zahl erkannt werden — bitte im Profil-Tab manuell eintragen.");
+  }
+}
+window.externWertUebernehmen = externWertUebernehmen;
 
 function tabVideos(p) {
   return `<div class="flex-between mb">
