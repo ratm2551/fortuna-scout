@@ -66,6 +66,7 @@ function route() {
     vergleich: viewVergleich,
     probetraining: viewProbetraining,
     bundesliga: viewBundesliga,
+    profilsuche: viewProfilsuche,
   };
   (views[seite] || viewDashboard)();
   main.scrollTop = 0;
@@ -279,14 +280,25 @@ function tabProfil(p) {
       ${zeile("Liga", esc(p.liga))}
       ${zeile("Verband", esc(p.verband))}
       ${zeile("Vertragsstatus", esc(p.vertragsstatus || "–"))}
-      ${zeile("Vertragsende", fmtDatum(p.vertragsende))}
+      ${zeile("Vertragsende", `<input type="date" value="${p.vertragsende || ""}" onchange="setFeld('${p.id}','vertragsende',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 6px">`)}
+      ${zeile("Marktwert (€)", `<input type="number" min="0" step="10000" value="${p.marktwert ?? ""}" placeholder="manuell eintragen" onchange="setFeld('${p.id}','marktwert',this.value?+this.value:null)" style="border:1px solid var(--border);border-radius:6px;padding:4px 6px;width:140px">`)}
       ${zeile("Berater", esc(p.berater || "–"))}
       ${zeile("Kontakt", esc(p.kontakt || "–"))}
       ${zeile("Probetraining", `${esc(p.trialStatus)}${p.trialUrteil ? ` · Urteil: <strong>${esc(p.trialUrteil)}</strong>` : ""}`)}
     </tbody></table></div>
   </div>
+  ${p.sbRef ? `<div class="card mt"><h3>⚽ StatsBomb-Referenzwerte <span class="badge badge-gelb">Experimentell</span></h3>
+    <div class="grid-3">
+      <div class="score-box"><div class="val">${p.sbRef.xg ?? "–"}</div><div class="lbl">xG (erwartete Tore)</div></div>
+      <div class="score-box"><div class="val">${p.sbRef.xa ?? "–"}</div><div class="lbl">xA (erwartete Assists)</div></div>
+      <div class="score-box"><div class="val">${p.sbRef.passQuote != null ? p.sbRef.passQuote + "%" : "–"}</div><div class="lbl">Passquote</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:10px">Echtes StatsBomb-xG-Modell aus Schussdaten · Tore: ${p.sbRef.tore} · Assists: ${p.sbRef.assists} · Einsätze im Datensatz: ${p.sbRef.einsaetze}</div>
+  </div>` : ""}
   <div class="card mt"><h3>🤖 KI-Kurzprofil (Prototyp)</h3><p style="font-size:13.5px;line-height:1.6">${kiKurzprofil(p)}</p></div>`;
 }
+function setFeld(id, feld, wert) { findSpieler(id)[feld] = wert; speichern(); }
+window.setFeld = setFeld;
 
 function kiKurzprofil(p) {
   const g = gesamtScore(p), pot = potenzialScore(p), fit = fortunaFit(p);
@@ -534,6 +546,123 @@ function viewProbetraining() {
 function setTrial(id, feld, wert) { findSpieler(id)[feld] = wert; speichern(); }
 window.setTrial = setTrial;
 
+// ---------- Profilsuche ("Profil zusammenklicken") ----------
+let psKriterien = {
+  position: "", minJahrgang: "", maxJahrgang: "",
+  maxMarktwert: "", vertragsendeVor: "",
+  minGesamt: "", minPotenzial: "", minXg: "", minXa: "", minTore: "", minAssists: "",
+};
+
+function fmtMarktwert(w) {
+  if (w == null || w === "") return "–";
+  if (w >= 1000000) return (w / 1000000).toFixed(1).replace(".0", "") + " Mio €";
+  if (w >= 1000) return Math.round(w / 1000) + " Tsd €";
+  return w + " €";
+}
+
+function viewProfilsuche() {
+  const alleJahrgaenge = [...new Set(SPIELER.map(jahrgang).filter(j => j !== "–"))].sort();
+
+  main.innerHTML = `
+    <div class="page-header">
+      <div><h1>🔍 Profilsuche</h1>
+        <div class="sub">Kriterien zusammenklicken — durchsucht eigene Scout-Datenbank + importierte Referenzspieler</div></div>
+    </div>
+    <div class="card mb">
+      <h3>Suchprofil</h3>
+      <div class="form-grid">
+        <div class="field"><label>Position</label>
+          <select id="ps-position"><option value="">Alle</option>${POSITIONEN.map(p => `<option ${psKriterien.position === p ? "selected" : ""}>${p}</option>`).join("")}</select></div>
+        <div class="field"><label>Jahrgang von</label>
+          <select id="ps-minJahrgang"><option value="">Egal</option>${alleJahrgaenge.map(j => `<option ${psKriterien.minJahrgang === j ? "selected" : ""}>${j}</option>`).join("")}</select></div>
+        <div class="field"><label>Jahrgang bis</label>
+          <select id="ps-maxJahrgang"><option value="">Egal</option>${alleJahrgaenge.map(j => `<option ${psKriterien.maxJahrgang === j ? "selected" : ""}>${j}</option>`).join("")}</select></div>
+        <div class="field"><label>Marktwert max. (€)</label>
+          <input id="ps-maxMarktwert" type="number" min="0" step="50000" placeholder="z.B. 5000000" value="${psKriterien.maxMarktwert}"></div>
+        <div class="field"><label>Vertragsende vor</label>
+          <input id="ps-vertragsendeVor" type="date" value="${psKriterien.vertragsendeVor}"></div>
+        <div class="field"><label>Min. Gesamt-Score</label>
+          <input id="ps-minGesamt" type="number" min="0" max="100" value="${psKriterien.minGesamt}"></div>
+        <div class="field"><label>Min. Potenzial-Score</label>
+          <input id="ps-minPotenzial" type="number" min="0" max="100" value="${psKriterien.minPotenzial}"></div>
+        <div class="field"><label>Min. xG <span class="badge badge-gelb" style="font-size:9.5px">Exp.</span></label>
+          <input id="ps-minXg" type="number" min="0" step="0.1" value="${psKriterien.minXg}"></div>
+        <div class="field"><label>Min. xA <span class="badge badge-gelb" style="font-size:9.5px">Exp.</span></label>
+          <input id="ps-minXa" type="number" min="0" step="0.1" value="${psKriterien.minXa}"></div>
+        <div class="field"><label>Min. Tore</label>
+          <input id="ps-minTore" type="number" min="0" value="${psKriterien.minTore}"></div>
+        <div class="field"><label>Min. Assists</label>
+          <input id="ps-minAssists" type="number" min="0" value="${psKriterien.minAssists}"></div>
+      </div>
+      <div class="mt"><button class="btn btn-secondary btn-sm" id="ps-reset">Kriterien zurücksetzen</button></div>
+    </div>
+    <div id="ps-ergebnis"></div>
+  `;
+
+  const ids = ["position", "minJahrgang", "maxJahrgang", "maxMarktwert", "vertragsendeVor", "minGesamt", "minPotenzial", "minXg", "minXa", "minTore", "minAssists"];
+  for (const k of ids) {
+    $(`#ps-${k}`).addEventListener("input", e => { psKriterien[k] = e.target.value; renderPsErgebnis(); });
+    $(`#ps-${k}`).addEventListener("change", e => { psKriterien[k] = e.target.value; renderPsErgebnis(); });
+  }
+  $("#ps-reset").addEventListener("click", () => {
+    psKriterien = { position: "", minJahrgang: "", maxJahrgang: "", maxMarktwert: "", vertragsendeVor: "", minGesamt: "", minPotenzial: "", minXg: "", minXa: "", minTore: "", minAssists: "" };
+    viewProfilsuche();
+  });
+  renderPsErgebnis();
+}
+
+function psPasstKriterien(p) {
+  const k = psKriterien;
+  const xg = p.sbRef?.xg ?? null, xa = p.sbRef?.xa ?? null, tore = p.sbRef?.tore ?? 0, assists = p.sbRef?.assists ?? 0;
+
+  if (k.position && p.hauptposition !== k.position && !p.nebenpositionen.includes(k.position)) return false;
+  if (k.minJahrgang && jahrgang(p) !== "–" && jahrgang(p) < k.minJahrgang) return false;
+  if (k.maxJahrgang && jahrgang(p) !== "–" && jahrgang(p) > k.maxJahrgang) return false;
+  if (k.maxMarktwert && (p.marktwert == null || p.marktwert > +k.maxMarktwert)) return false;
+  if (k.vertragsendeVor && (!p.vertragsende || p.vertragsende > k.vertragsendeVor)) return false;
+  if (k.minGesamt && gesamtScore(p) < +k.minGesamt) return false;
+  if (k.minPotenzial && potenzialScore(p) < +k.minPotenzial) return false;
+  if (k.minXg && (xg == null || xg < +k.minXg)) return false;
+  if (k.minXa && (xa == null || xa < +k.minXa)) return false;
+  if (k.minTore && tore < +k.minTore) return false;
+  if (k.minAssists && assists < +k.minAssists) return false;
+  return true;
+}
+
+function renderPsErgebnis() {
+  const box = $("#ps-ergebnis");
+  if (!box) return;
+  const treffer = SPIELER.filter(psPasstKriterien).sort((a, b) => fortunaFit(b) - fortunaFit(a));
+  const irgendeinKriteriumGesetzt = Object.values(psKriterien).some(v => v !== "");
+
+  if (!irgendeinKriteriumGesetzt) {
+    box.innerHTML = `<div class="card"><div class="empty">Stelle mindestens ein Kriterium ein, um passende Spieler zu finden.</div></div>`;
+    return;
+  }
+
+  box.innerHTML = `<div class="card">
+    <div class="flex-between mb"><h3 style="margin:0">Treffer (${treffer.length})</h3>
+      <span style="font-size:12px;color:var(--muted)">Sortiert nach Fortuna-Fit</span></div>
+    ${treffer.length ? `<table><thead><tr>
+      <th>Spieler</th><th>Position</th><th>Jahrgang</th><th>Marktwert</th><th>Vertragsende</th>
+      <th>Gesamt</th><th>Potenzial</th><th>Fit</th><th>Tore/xG</th><th>Assists/xA</th>
+    </tr></thead><tbody>
+      ${treffer.map(p => `<tr onclick="location.hash='#/spieler/${p.id}'">
+        <td><strong>${esc(p.vorname)} ${esc(p.nachname)}</strong></td>
+        <td>${esc(p.hauptposition)}</td>
+        <td>${jahrgang(p)}</td>
+        <td>${fmtMarktwert(p.marktwert)}</td>
+        <td>${fmtDatum(p.vertragsende)}</td>
+        <td>${scorePill(gesamtScore(p))}</td>
+        <td>${scorePill(potenzialScore(p))}</td>
+        <td>${scorePill(fortunaFit(p))}</td>
+        <td>${p.sbRef ? `${p.sbRef.tore} / ${p.sbRef.xg ?? "–"}` : "–"}</td>
+        <td>${p.sbRef ? `${p.sbRef.assists} / ${p.sbRef.xa ?? "–"}` : "–"}</td>
+      </tr>`).join("")}
+    </tbody></table>` : `<div class="empty">Keine Spieler erfüllen aktuell diese Kriterien.</div>`}
+  </div>`;
+}
+
 // ---------- Modals ----------
 function zeigeModal(html, onSubmit) {
   const root = $("#modal-root");
@@ -544,6 +673,18 @@ function zeigeModal(html, onSubmit) {
 }
 function schliesseModal() { $("#modal-root").innerHTML = ""; }
 window.schliesseModal = schliesseModal;
+
+// Nicht-blockierende Benachrichtigung (statt confirm()/alert())
+function toast(text, aktion) {
+  const id = "toast-" + Date.now();
+  const div = document.createElement("div");
+  div.id = id;
+  div.style.cssText = "position:fixed;bottom:24px;right:24px;background:#1c1e21;color:#fff;padding:14px 18px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:200;font-size:13.5px;display:flex;gap:14px;align-items:center;max-width:360px";
+  div.innerHTML = `<span>${esc(text)}</span>${aktion ? `<button class="btn btn-sm" style="white-space:nowrap" onclick="${aktion.onclick}">${esc(aktion.label)}</button>` : ""}`;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 6000);
+}
+window.toast = toast;
 
 function feld(label, name, typ = "text", attrs = "", optionen = null) {
   if (optionen) return `<div class="field"><label>${label}</label><select name="${name}" ${attrs}>${optionen.map(o => `<option>${o}</option>`).join("")}</select></div>`;
@@ -588,7 +729,7 @@ function modalNeuerSpieler() {
       starkerFuss: fd.get("starkerFuss"), schwacherFuss: Math.min(5, Math.max(1, +fd.get("schwacherFuss") || 3)),
       hauptposition: fd.get("hauptposition"), nebenpositionen: fd.getAll("nebenpositionen"),
       vertragsstatus: fd.get("vertragsstatus") || "", vertragsende: fd.get("vertragsende") || "",
-      berater: fd.get("berater") || "", kontakt: fd.get("kontakt") || "",
+      berater: fd.get("berater") || "", kontakt: fd.get("kontakt") || "", marktwert: null,
       pool: "beobachten", trialStatus: "Keine", trialUrteil: "",
       erstelltAm: HEUTE.toISOString().slice(0, 10),
       ratings: leereRatings(), videos: [], berichte: [], entwicklung: [],
@@ -689,7 +830,7 @@ let sbFilter = { suche: "", position: "", team: "" };
 
 function viewBundesliga() {
   const cached = sbCacheVorhanden();
-  const cacheObj = cached ? JSON.parse(localStorage.getItem("statsbomb-bundesliga-v2") || "{}") : null;
+  const cacheObj = cached ? JSON.parse(localStorage.getItem("statsbomb-bundesliga-v3") || "{}") : null;
   const geladen = cacheObj?.geladen ? new Date(cacheObj.geladen).toLocaleDateString("de-DE") : null;
 
   main.innerHTML = `
@@ -754,20 +895,21 @@ function sbSpielertabelle(cacheObj) {
         <div class="field"><label>Team</label>
           <select id="sb-team"><option value="">Alle</option>${teams.map(t => `<option ${sbFilter.team === t ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></div>
       </div>
-      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${gefiltert.length} Spieler gefunden</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${gefiltert.length} Spieler gefunden · xG/xA aus echtem StatsBomb-Modell (kein Scraping)</div>
       ${gefiltert.length ? `<table><thead><tr>
-        <th>Spieler</th><th>Nation</th><th>Position</th><th>Team(s)</th><th>#</th><th>Einsätze</th><th>Tore</th><th>Assists</th><th>Schüsse</th><th>Aktion</th>
+        <th>Spieler</th><th>Nation</th><th>Position</th><th>Team(s)</th><th>Einsätze</th><th>Tore</th><th>xG</th><th>Assists</th><th>xA</th><th>Pass%</th><th>Aktion</th>
       </tr></thead><tbody>
         ${gefiltert.map(s => `<tr>
           <td><strong>${esc(s.name)}</strong>${s.nickname ? `<br><span style="font-size:11.5px;color:var(--muted)">"${esc(s.nickname)}"</span>` : ""}</td>
           <td><span class="tag">${esc(s.nationalitaet)}</span></td>
           <td>${esc(s.hauptposition)}</td>
           <td style="font-size:12.5px">${s.teams.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</td>
-          <td style="color:var(--muted)">${s.trikot || "–"}</td>
           <td>${s.einsaetze}</td>
           <td>${s.tore > 0 ? `<strong style="color:var(--gruen)">${s.tore}</strong>` : "–"}</td>
+          <td>${s.xg ?? "–"}</td>
           <td>${s.assists > 0 ? `<strong>${s.assists}</strong>` : "–"}</td>
-          <td>${s.schuesse || "–"}</td>
+          <td>${s.xa ?? "–"}</td>
+          <td>${s.passQuote != null ? s.passQuote + "%" : "–"}</td>
           <td><button class="btn btn-sm btn-secondary" onclick="sbZuScout('${s.sbId}')">+ Scout</button></td>
         </tr>`).join("")}
       </tbody></table>` : `<div class="empty">Keine Spieler gefunden.</div>`}
@@ -800,7 +942,7 @@ window.sbStartLaden = sbStartLaden;
 
 // StatsBomb-Spieler als Scout-Lead übernehmen
 function sbZuScout(sbId) {
-  const cacheObj = JSON.parse(localStorage.getItem("statsbomb-bundesliga-v2") || "{}");
+  const cacheObj = JSON.parse(localStorage.getItem("statsbomb-bundesliga-v3") || "{}");
   const sbSp = cacheObj.spieler?.find(s => s.sbId == sbId);
   if (!sbSp) return;
 
@@ -820,25 +962,22 @@ function sbZuScout(sbId) {
     starkerFuss: "Rechts", schwacherFuss: 3,
     hauptposition: sbSp.hauptposition,
     nebenpositionen: sbSp.positionen.filter(p => p !== sbSp.hauptposition),
-    vertragsstatus: "", vertragsende: "", berater: "", kontakt: "",
+    vertragsstatus: "", vertragsende: sbSp.vertragsende || "", berater: "", kontakt: "", marktwert: sbSp.marktwert ?? null,
     pool: "beobachten", trialStatus: "Keine", trialUrteil: "",
     erstelltAm: HEUTE.toISOString().slice(0, 10),
     ratings: leereRatings(),
     videos: [], berichte: [], entwicklung: [],
-    sbRef: { tore: sbSp.tore, assists: sbSp.assists, schuesse: sbSp.schuesse, einsaetze: sbSp.einsaetze },
+    sbRef: { tore: sbSp.tore, assists: sbSp.assists, schuesse: sbSp.schuesse, einsaetze: sbSp.einsaetze, xg: sbSp.xg, xa: sbSp.xa, passQuote: sbSp.passQuote },
   };
 
   if (SPIELER.find(p => p.id === neu.id)) {
-    alert(`${sbSp.name} ist bereits in der Scout-Datenbank.`);
+    toast(`${sbSp.name} ist bereits in der Scout-Datenbank.`);
     return;
   }
 
   SPIELER.push(neu);
   speichern();
-
-  if (confirm(`${sbSp.name} wurde zur Scout-Datenbank hinzugefügt. Jetzt zum Profil?`)) {
-    location.hash = `#/spieler/${neu.id}`;
-  }
+  toast(`${sbSp.name} zur Scout-Datenbank hinzugefügt.`, { label: "Profil öffnen", onclick: `location.hash='#/spieler/${neu.id}'` });
 }
 window.sbZuScout = sbZuScout;
 
@@ -851,7 +990,7 @@ document.addEventListener("change", e => {
   if (e.target.id === "sb-team") { sbFilter.team = e.target.value; renderSbTabelle(); }
 });
 function renderSbTabelle() {
-  const cacheObj = JSON.parse(localStorage.getItem("statsbomb-bundesliga-v2") || "{}");
+  const cacheObj = JSON.parse(localStorage.getItem("statsbomb-bundesliga-v3") || "{}");
   const container = document.querySelector(".card:last-child");
   if (!container || !cacheObj.spieler) return;
   // Re-render nur die Tabelle

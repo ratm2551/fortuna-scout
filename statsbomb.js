@@ -19,7 +19,7 @@ const SB_SAMPLE_MATCHES = [
   3895266, // Leverkusen 2-0 Wolfsburg
 ];
 
-const SB_CACHE_KEY = "statsbomb-bundesliga-v2";
+const SB_CACHE_KEY = "statsbomb-bundesliga-v3";
 
 // Position-Mapping: StatsBomb → Fortuna-Positionen
 const SB_POS_MAP = {
@@ -147,26 +147,40 @@ async function sbLadeBundesligaSpieler(onProgress) {
     }
   }
 
-  onProgress && onProgress("Lade Tore & Assists…", 75);
+  onProgress && onProgress("Lade Tore, xG & Assists…", 75);
 
-  // Tore & Assists aus Events (für Sample-Matches)
-  const toreMap = {}, assistsMap = {}, schuesse = {};
-  for (let i = 0; i < Math.min(ladeIds.length, 5); i++) {
+  // Echte xG/xA + Tore/Assists/Pässe aus den StatsBomb-Events (statsbomb_xg-Modell, kein Scraping nötig)
+  const toreMap = {}, assistsMap = {}, schuesse = {}, xgMap = {}, xaMap = {}, passOkMap = {}, passGesamtMap = {};
+  for (let i = 0; i < ladeIds.length; i++) {
     const matchId = ladeIds[i];
-    onProgress && onProgress(`Stats Match ${i + 1}/5…`, 75 + i * 4);
+    onProgress && onProgress(`Lade xG/xA Match ${i + 1}/${ladeIds.length}…`, 75 + Math.round((i / ladeIds.length) * 20));
     try {
       const events = await sbFetch(`events/${matchId}.json`);
       for (const ev of events) {
         const pid = ev.player?.id;
         if (!pid) continue;
-        if (ev.type?.name === "Shot" && ev.shot?.outcome?.name === "Goal" && !ev.shot?.type?.name?.includes("Penalty")) {
-          toreMap[pid] = (toreMap[pid] || 0) + 1;
-        }
-        if (ev.type?.name === "Pass" && ev.pass?.goal_assist) {
-          assistsMap[pid] = (assistsMap[pid] || 0) + 1;
-        }
+
         if (ev.type?.name === "Shot") {
           schuesse[pid] = (schuesse[pid] || 0) + 1;
+          xgMap[pid] = (xgMap[pid] || 0) + (ev.shot?.statsbomb_xg || 0);
+          if (ev.shot?.outcome?.name === "Goal" && ev.shot?.type?.name !== "Penalty") {
+            toreMap[pid] = (toreMap[pid] || 0) + 1;
+          }
+        }
+        if (ev.type?.name === "Pass") {
+          passGesamtMap[pid] = (passGesamtMap[pid] || 0) + 1;
+          if (!ev.pass?.outcome) passOkMap[pid] = (passOkMap[pid] || 0) + 1; // kein outcome = erfolgreich
+          if (ev.pass?.goal_assist) assistsMap[pid] = (assistsMap[pid] || 0) + 1;
+        }
+      }
+      // xA: StatsBomb verlinkt den Schlüsselpass direkt über pass.assisted_shot_id mit dem Schuss
+      const eventsById = new Map(events.map(e => [e.id, e]));
+      for (const ev of events) {
+        if (ev.type?.name === "Pass" && ev.pass?.assisted_shot_id && ev.player?.id) {
+          const shotEv = eventsById.get(ev.pass.assisted_shot_id);
+          if (shotEv?.type?.name === "Shot") {
+            xaMap[ev.player.id] = (xaMap[ev.player.id] || 0) + (shotEv.shot?.statsbomb_xg || 0);
+          }
         }
       }
     } catch (e) { /* ignorieren */ }
@@ -174,21 +188,31 @@ async function sbLadeBundesligaSpieler(onProgress) {
 
   onProgress && onProgress("Verarbeite Daten…", 96);
 
-  const spieler = Object.values(spielerMap).map(sp => ({
-    sbId: sp.sbId,
-    name: sp.name,
-    nickname: sp.nickname,
-    trikot: sp.trikot,
-    nationalitaet: sp.nationalitaet,
-    teams: [...sp.teams],
-    hauptposition: [...sp.positionen][0] || "Flügelspieler",
-    positionen: [...sp.positionen],
-    rawPositionen: [...sp.rawPositionen],
-    einsaetze: sp.einsaetze,
-    tore: toreMap[sp.sbId] || 0,
-    assists: assistsMap[sp.sbId] || 0,
-    schuesse: schuesse[sp.sbId] || 0,
-  })).sort((a, b) => a.name.localeCompare(b.name));
+  const spieler = Object.values(spielerMap).map(sp => {
+    const passGesamt = passGesamtMap[sp.sbId] || 0;
+    const passOk = passOkMap[sp.sbId] || 0;
+    return {
+      sbId: sp.sbId,
+      name: sp.name,
+      nickname: sp.nickname,
+      trikot: sp.trikot,
+      nationalitaet: sp.nationalitaet,
+      teams: [...sp.teams],
+      hauptposition: [...sp.positionen][0] || "Flügelspieler",
+      positionen: [...sp.positionen],
+      rawPositionen: [...sp.rawPositionen],
+      einsaetze: sp.einsaetze,
+      tore: toreMap[sp.sbId] || 0,
+      assists: assistsMap[sp.sbId] || 0,
+      schuesse: schuesse[sp.sbId] || 0,
+      xg: Math.round((xgMap[sp.sbId] || 0) * 100) / 100,
+      xa: Math.round((xaMap[sp.sbId] || 0) * 100) / 100,
+      passQuote: passGesamt ? Math.round((passOk / passGesamt) * 100) : null,
+      passeGesamt: passGesamt,
+      marktwert: null,
+      vertragsende: "",
+    };
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   const ergebnis = { spieler, matches: matchInfos, geladen: new Date().toISOString() };
   localStorage.setItem(SB_CACHE_KEY, JSON.stringify(ergebnis));
