@@ -52,8 +52,89 @@ function scorePill(wert) {
   return `<span class="score-pill ${cls}">${wert}</span>`;
 }
 
+// ---------- Authentifizierung ----------
+const BENUTZER = [
+  { nutzername: "koordinator", passwort: "f95scout",   rolle: "Koordinator" },
+  { nutzername: "scout",       passwort: "scout123",   rolle: "Scout" },
+  { nutzername: "trainer",     passwort: "trainer123", rolle: "Trainer" },
+  { nutzername: "admin",       passwort: "admin2024",  rolle: "Administrator" },
+];
+const SESSION_KEY = "fortuna-session";
+
+function aktuellerNutzer() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
+}
+function anmelden(nutzername, passwort) {
+  const u = BENUTZER.find(b => b.nutzername === nutzername && b.passwort === passwort);
+  if (!u) return false;
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nutzername: u.nutzername, rolle: u.rolle }));
+  return true;
+}
+function abmelden() {
+  sessionStorage.removeItem(SESSION_KEY);
+  const layout = document.querySelector(".layout");
+  if (layout) layout.style.display = "none";
+  viewLogin();
+}
+window.abmelden = abmelden;
+
+function viewLogin() {
+  const layout = document.querySelector(".layout");
+  if (layout) layout.style.display = "none";
+  let root = document.getElementById("login-root");
+  if (!root) { root = document.createElement("div"); root.id = "login-root"; document.body.appendChild(root); }
+  root.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f1013">
+      <div style="background:#1c1e21;border-radius:16px;padding:40px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,.4)">
+        <div style="text-align:center;margin-bottom:28px">
+          <div style="font-size:36px;font-weight:800;color:#d31920;margin-bottom:4px">F95</div>
+          <div style="font-weight:700;font-size:18px;color:#fff">Fortuna Talent Scout</div>
+          <div style="font-size:12.5px;color:#6b7280;margin-top:4px">Bitte anmelden</div>
+        </div>
+        <div id="login-fehler" style="display:none;background:#3b0707;border:1px solid #d31920;color:#f87171;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px">
+          Benutzername oder Passwort falsch.
+        </div>
+        <div style="margin-bottom:14px"><label style="display:block;font-size:12.5px;color:#9ca3af;margin-bottom:6px">Benutzername</label>
+          <input id="login-user" type="text" autocomplete="username" placeholder="z.B. scout"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #374151;background:#111317;color:#fff;font-size:14px">
+        </div>
+        <div style="margin-bottom:20px"><label style="display:block;font-size:12.5px;color:#9ca3af;margin-bottom:6px">Passwort</label>
+          <input id="login-pw" type="password" autocomplete="current-password" placeholder="••••••••"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #374151;background:#111317;color:#fff;font-size:14px">
+        </div>
+        <button id="login-btn" style="width:100%;padding:11px;background:#d31920;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Anmelden</button>
+        <div style="margin-top:20px;font-size:11.5px;color:#4b5563;text-align:center;line-height:1.8">
+          Demo-Zugänge:<br>
+          <strong style="color:#6b7280">koordinator</strong> / f95scout &nbsp;·&nbsp; <strong style="color:#6b7280">scout</strong> / scout123<br>
+          <strong style="color:#6b7280">trainer</strong> / trainer123 &nbsp;·&nbsp; <strong style="color:#6b7280">admin</strong> / admin2024
+        </div>
+      </div>
+    </div>`;
+
+  const tryLogin = () => {
+    const u = (document.getElementById("login-user")?.value || "").trim().toLowerCase();
+    const pw = document.getElementById("login-pw")?.value || "";
+    if (anmelden(u, pw)) {
+      root.innerHTML = "";
+      const layout = document.querySelector(".layout");
+      if (layout) layout.style.display = "";
+      const nutzer = aktuellerNutzer();
+      const sel = document.getElementById("roleSelect");
+      if (sel && nutzer?.rolle) sel.value = nutzer.rolle;
+      route();
+    } else {
+      const err = document.getElementById("login-fehler");
+      if (err) err.style.display = "block";
+    }
+  };
+  document.getElementById("login-btn")?.addEventListener("click", tryLogin);
+  document.getElementById("login-pw")?.addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); });
+  document.getElementById("login-user")?.addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("login-pw")?.focus(); });
+}
+
 // ---------- Routing ----------
 function route() {
+  if (!aktuellerNutzer()) { viewLogin(); return; }
   const hash = location.hash.replace(/^#\//, "") || "dashboard";
   const [seite, param] = hash.split("/");
   document.querySelectorAll("#nav a").forEach(a => {
@@ -155,7 +236,10 @@ function viewSpielerListe() {
   main.innerHTML = `
     <div class="page-header">
       <div><h1>Spielerdatenbank</h1><div class="sub">${SPIELER.length} Spieler erfasst</div></div>
-      <button class="btn" onclick="modalNeuerSpieler()">+ Neuer Spieler</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="exportiereCSV(gefilterteSpieler(),'spielerdatenbank')">CSV exportieren</button>
+        <button class="btn" onclick="modalNeuerSpieler()">+ Neuer Spieler</button>
+      </div>
     </div>
     <div class="card mb">
       <div class="filters">
@@ -233,10 +317,11 @@ function viewSpielerDetail(id, tab) {
       <div>
         <h1>${esc(p.vorname)} ${esc(p.nachname)}</h1>
         <div class="player-meta">${esc(p.hauptposition)} · Jahrgang ${jahrgang(p)} (${alter(p)} Jahre) · ${esc(p.verein)} · ${esc(p.liga)}</div>
-        <div class="player-meta mt" style="margin-top:6px">
+        <div class="player-meta mt" style="margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           Pool: <select onchange="setPool('${p.id}', this.value)" style="padding:4px 6px;border-radius:6px;border:1px solid var(--border)">
             ${Object.entries(POOL_LISTEN).map(([k, v]) => `<option value="${k}" ${p.pool === k ? "selected" : ""}>${v.titel}</option>`).join("")}
           </select>
+          <button class="btn btn-ghost btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="spielerLoeschen('${p.id}')">🗑 Löschen</button>
         </div>
       </div>
       <div class="scores-row">
@@ -494,7 +579,9 @@ function tabEntwicklung(p) {
 function viewTalentpool() {
   main.innerHTML = `
     <div class="page-header"><div><h1>Talentpool-Management</h1>
-      <div class="sub">Spieler per Auswahl zwischen den Listen verschieben</div></div></div>
+      <div class="sub">Spieler per Auswahl zwischen den Listen verschieben</div></div>
+      <button class="btn btn-secondary" onclick="exportiereCSV(SPIELER.filter(p=>p.pool!=='archiv'),'talentpool')">CSV exportieren</button>
+    </div>
     <div class="kanban">
       ${Object.entries(POOL_LISTEN).map(([key, liste]) => {
         const spieler = SPIELER.filter(p => p.pool === key).sort((a, b) => potenzialScore(b) - potenzialScore(a));
@@ -507,6 +594,7 @@ function viewTalentpool() {
             <select onchange="setPool('${p.id}', this.value)">
               ${Object.entries(POOL_LISTEN).map(([k, v]) => `<option value="${k}" ${k === key ? "selected" : ""}>${v.titel}</option>`).join("")}
             </select>
+            ${key !== "archiv" ? `<button class="btn btn-ghost btn-sm" style="color:var(--muted);margin-top:6px;width:100%;font-size:11.5px" onclick="setPool('${p.id}','archiv')">✕ Archivieren</button>` : ""}
           </div>`).join("") || `<div class="empty">Leer</div>`}
         </div>`;
       }).join("")}
@@ -1095,12 +1183,75 @@ function renderSbTabelle() {
   viewBundesliga();
 }
 
-// ---------- Init ----------
-$("#resetData").addEventListener("click", () => {
-  if (confirm("Alle Änderungen verwerfen und Demodaten neu laden?")) {
-    resetDemodaten();
-    SPIELER = ladeSpieler();
+// ---------- Spieler löschen ----------
+function spielerLoeschen(id) {
+  const p = findSpieler(id);
+  if (!p) return;
+  const root = $("#modal-root");
+  root.innerHTML = `<div class="modal-backdrop"><div class="modal">
+    <h2>Spieler löschen</h2>
+    <p style="margin:16px 0">Soll <strong>${esc(p.vorname)} ${esc(p.nachname)}</strong> dauerhaft aus der Datenbank entfernt werden?<br>
+    <span style="color:var(--rot);font-size:13px">Diese Aktion kann nicht rückgängig gemacht werden.</span></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+      <button class="btn" style="background:var(--rot);border-color:var(--rot)" onclick="spielerLoeschenBestaetigt('${id}')">Endgültig löschen</button>
+    </div>
+  </div></div>`;
+  $(".modal-backdrop").addEventListener("click", e => { if (e.target.classList.contains("modal-backdrop")) schliesseModal(); });
+}
+window.spielerLoeschen = spielerLoeschen;
+
+function spielerLoeschenBestaetigt(id) {
+  const p = findSpieler(id);
+  const name = p ? `${p.vorname} ${p.nachname}` : "Spieler";
+  SPIELER = SPIELER.filter(s => s.id !== id);
+  speichern();
+  schliesseModal();
+  toast(`${name} wurde aus der Datenbank gelöscht.`);
+  if (location.hash.startsWith("#/spieler/")) {
+    location.hash = "#/spieler";
+  } else {
     route();
   }
+}
+window.spielerLoeschenBestaetigt = spielerLoeschenBestaetigt;
+
+// ---------- CSV-Export ----------
+function exportiereCSV(spielerListe, dateiname) {
+  const kopf = ["Vorname","Nachname","Position","Jahrgang","Verein","Liga","Pool","Gesamt","Potenzial","Fortuna-Fit","Marktwert (EUR)","Vertragsende","xG","xA","Tore","Assists"];
+  const zeilen = spielerListe.map(p => [
+    p.vorname, p.nachname, p.hauptposition, jahrgang(p), p.verein, p.liga,
+    POOL_LISTEN[p.pool]?.titel || p.pool,
+    gesamtScore(p), potenzialScore(p), fortunaFit(p),
+    p.marktwert ?? "", p.vertragsende || "",
+    p.sbRef?.xg ?? "", p.sbRef?.xa ?? "", p.sbRef?.tore ?? "", p.sbRef?.assists ?? "",
+  ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","));
+
+  const csv = "﻿" + [kopf.join(","), ...zeilen].join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `fortuna-${dateiname}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast(`${spielerListe.length} Spieler als CSV exportiert.`);
+}
+window.exportiereCSV = exportiereCSV;
+
+// ---------- Init ----------
+$("#resetData").addEventListener("click", () => {
+  const root = $("#modal-root");
+  root.innerHTML = `<div class="modal-backdrop"><div class="modal">
+    <h2>Demodaten zurücksetzen?</h2>
+    <p style="margin:16px 0">Alle Änderungen werden verworfen und die ursprünglichen Demodaten neu geladen.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+      <button class="btn" onclick="schliesseModal();resetDemodaten();SPIELER=ladeSpieler();route()">Zurücksetzen</button>
+    </div>
+  </div></div>`;
+  $(".modal-backdrop").addEventListener("click", e => { if (e.target.classList.contains("modal-backdrop")) schliesseModal(); });
 });
 route();
