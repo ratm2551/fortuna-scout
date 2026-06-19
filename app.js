@@ -124,11 +124,6 @@ function viewLogin() {
             style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #374151;background:#111317;color:#fff;font-size:14px">
         </div>
         <button id="login-btn" style="width:100%;padding:11px;background:#d31920;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Anmelden</button>
-        <div style="margin-top:20px;font-size:11.5px;color:#4b5563;text-align:center;line-height:1.8">
-          Demo-Zugänge:<br>
-          <strong style="color:#6b7280">koordinator</strong> / f95scout &nbsp;·&nbsp; <strong style="color:#6b7280">scout</strong> / scout123<br>
-          <strong style="color:#6b7280">trainer</strong> / trainer123 &nbsp;·&nbsp; <strong style="color:#6b7280">admin</strong> / admin2024
-        </div>
       </div>
     </div>`;
 
