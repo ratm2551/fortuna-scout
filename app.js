@@ -81,6 +81,42 @@ function ladeScoreConfig() {
 function speichereScoreConfig() { localStorage.setItem(SCORE_CONFIG_KEY, JSON.stringify(SCORE_CONFIG)); }
 let SCORE_CONFIG = ladeScoreConfig();
 
+// ---------- Berechtigungen ----------
+const BERECHTIGUNGEN_KEY = "fortuna-berechtigungen-v1";
+const ALLE_RECHTE = [
+  { id: "spieler_sehen",      label: "Spielerdatenbank ansehen" },
+  { id: "spieler_anlegen",    label: "Spieler anlegen" },
+  { id: "spieler_bearbeiten", label: "Spieler bearbeiten" },
+  { id: "spieler_loeschen",   label: "Spieler löschen" },
+  { id: "csv_export",         label: "CSV exportieren" },
+  { id: "talentpool",         label: "Talentpool verwalten" },
+  { id: "berichte",           label: "Scoutingberichte erstellen" },
+  { id: "videos",             label: "Videos verwalten" },
+  { id: "entwicklung",        label: "Entwicklungsmonitor" },
+  { id: "probetraining",      label: "Probetraining-Modul" },
+  { id: "spielervergleich",   label: "Spielervergleich" },
+  { id: "profilsuche",        label: "Profilsuche" },
+  { id: "bundesliga",         label: "Bundesliga / StatsBomb-Daten" },
+];
+const DEFAULT_BERECHTIGUNGEN = {
+  Koordinator: ["spieler_sehen","spieler_anlegen","spieler_bearbeiten","spieler_loeschen","csv_export","talentpool","berichte","videos","entwicklung","probetraining","spielervergleich","profilsuche","bundesliga"],
+  Scout:       ["spieler_sehen","spieler_anlegen","spieler_bearbeiten","csv_export","talentpool","berichte","videos","probetraining","spielervergleich","profilsuche","bundesliga"],
+  Trainer:     ["spieler_sehen","spieler_bearbeiten","berichte","entwicklung","spielervergleich"],
+};
+function ladeBerechtigungen() {
+  try { const s = localStorage.getItem(BERECHTIGUNGEN_KEY); if (s) return JSON.parse(s); } catch {}
+  return JSON.parse(JSON.stringify(DEFAULT_BERECHTIGUNGEN));
+}
+function speichereBerechtigungen(b) { localStorage.setItem(BERECHTIGUNGEN_KEY, JSON.stringify(b)); }
+let BERECHTIGUNGEN = ladeBerechtigungen();
+
+function hatRecht(id) {
+  const n = aktuellerNutzer();
+  if (!n) return false;
+  if (n.rolle === "Administrator") return true;
+  return (BERECHTIGUNGEN[n.rolle] || []).includes(id);
+}
+
 function aktuellerNutzer() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
 }
@@ -150,9 +186,22 @@ function viewLogin() {
   document.getElementById("login-user")?.addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("login-pw")?.focus(); });
 }
 
+const ROUTE_RECHTE = {
+  spieler:      "spieler_sehen",
+  talentpool:   "talentpool",
+  vergleich:    "spielervergleich",
+  probetraining:"probetraining",
+  profilsuche:  "profilsuche",
+  bundesliga:   "bundesliga",
+};
+
 function updateNav() {
   const nav = document.getElementById("nav");
   if (!nav) return;
+  for (const [route, recht] of Object.entries(ROUTE_RECHTE)) {
+    const link = nav.querySelector(`a[data-route="${route}"]`);
+    if (link) link.style.display = hatRecht(recht) ? "" : "none";
+  }
   nav.querySelector('a[data-route="admin"]')?.remove();
   nav.querySelector(".nav-admin-section")?.remove();
   const nutzer = aktuellerNutzer();
@@ -174,9 +223,14 @@ function route() {
   if (!aktuellerNutzer()) { viewLogin(); return; }
   const hash = location.hash.replace(/^#\//, "") || "dashboard";
   const [seite, param] = hash.split("/");
+  updateNav();
   document.querySelectorAll("#nav a").forEach(a => {
     a.classList.toggle("active", a.dataset.route === seite);
   });
+  if (ROUTE_RECHTE[seite] && !hatRecht(ROUTE_RECHTE[seite])) {
+    main.innerHTML = `<div class="card mt"><div class="empty">🔒 Kein Zugriff – deine Rolle hat keine Berechtigung für diesen Bereich.</div></div>`;
+    return;
+  }
   const views = {
     dashboard: viewDashboard,
     spieler: () => (param ? viewSpielerDetail(param) : viewSpielerListe()),
@@ -275,8 +329,8 @@ function viewSpielerListe() {
     <div class="page-header">
       <div><h1>Spielerdatenbank</h1><div class="sub">${SPIELER.length} Spieler erfasst</div></div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" onclick="exportiereCSV(gefilterteSpieler(),'spielerdatenbank')">CSV exportieren</button>
-        <button class="btn" onclick="modalNeuerSpieler()">+ Neuer Spieler</button>
+        ${hatRecht("csv_export") ? `<button class="btn btn-secondary" onclick="exportiereCSV(gefilterteSpieler(),'spielerdatenbank')">CSV exportieren</button>` : ""}
+        ${hatRecht("spieler_anlegen") ? `<button class="btn" onclick="modalNeuerSpieler()">+ Neuer Spieler</button>` : ""}
       </div>
     </div>
     <div class="card mb">
@@ -359,7 +413,7 @@ function viewSpielerDetail(id, tab) {
           Pool: <select onchange="setPool('${p.id}', this.value)" style="padding:4px 6px;border-radius:6px;border:1px solid var(--border)">
             ${Object.entries(POOL_LISTEN).map(([k, v]) => `<option value="${k}" ${p.pool === k ? "selected" : ""}>${v.titel}</option>`).join("")}
           </select>
-          <button class="btn btn-ghost btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="spielerLoeschen('${p.id}')">🗑 Löschen</button>
+          ${hatRecht("spieler_loeschen") ? `<button class="btn btn-ghost btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="spielerLoeschen('${p.id}')">🗑 Löschen</button>` : ""}
         </div>
       </div>
       <div class="scores-row">
@@ -369,8 +423,15 @@ function viewSpielerDetail(id, tab) {
       </div>
     </div>
     <div class="tabs">
-      ${[["profil", "Profil"], ["bewertung", "Bewertung"], ["berichte", `Berichte (${p.berichte.length})`], ["videos", `Videos (${p.videos.length})`], ["entwicklung", "Entwicklungsmonitor"], ["extern", `Externe Quellen (${(p.externeQuellen || []).length})`]]
-      .map(([k, t]) => `<button class="${aktiverTab === k ? "active" : ""}" onclick="viewSpielerDetail('${p.id}','${k}')">${t}</button>`).join("")}
+      ${[
+        ["profil",     "Profil",                                          null],
+        ["bewertung",  "Bewertung",                                       "spieler_bearbeiten"],
+        ["berichte",   `Berichte (${p.berichte.length})`,                 "berichte"],
+        ["videos",     `Videos (${p.videos.length})`,                     "videos"],
+        ["entwicklung","Entwicklungsmonitor",                             "entwicklung"],
+        ["extern",     `Externe Quellen (${(p.externeQuellen||[]).length})`, null],
+      ].filter(([,,r]) => !r || hatRecht(r))
+       .map(([k, t]) => `<button class="${aktiverTab === k ? "active" : ""}" onclick="viewSpielerDetail('${p.id}','${k}')">${t}</button>`).join("")}
     </div>
     <div id="tab-inhalt"></div>`;
 
@@ -479,7 +540,7 @@ function bindRatings(p) {
 function tabBerichte(p) {
   return `<div class="flex-between mb">
     <h3 style="margin:0">Scoutingberichte</h3>
-    <button class="btn btn-sm" onclick="modalNeuerBericht('${p.id}')">+ Neue Sichtung</button>
+    ${hatRecht("berichte") ? `<button class="btn btn-sm" onclick="modalNeuerBericht('${p.id}')">+ Neue Sichtung</button>` : ""}
   </div>
   ${p.berichte.length ? [...p.berichte].sort((a, b) => b.datum.localeCompare(a.datum)).map(b => `
     <div class="report">
@@ -588,7 +649,7 @@ window.externWertUebernehmen = externWertUebernehmen;
 function tabVideos(p) {
   return `<div class="flex-between mb">
     <h3 style="margin:0">Video-Modul</h3>
-    <button class="btn btn-sm" onclick="modalNeuesVideo('${p.id}')">+ Video verlinken</button>
+    ${hatRecht("videos") ? `<button class="btn btn-sm" onclick="modalNeuesVideo('${p.id}')">+ Video verlinken</button>` : ""}
   </div>
   ${p.videos.length ? `<div class="grid-3">${p.videos.map(v => `
     <div class="card">
@@ -618,7 +679,7 @@ function viewTalentpool() {
   main.innerHTML = `
     <div class="page-header"><div><h1>Talentpool-Management</h1>
       <div class="sub">Spieler per Auswahl zwischen den Listen verschieben</div></div>
-      <button class="btn btn-secondary" onclick="exportiereCSV(SPIELER.filter(p=>p.pool!=='archiv'),'talentpool')">CSV exportieren</button>
+      ${hatRecht("csv_export") ? `<button class="btn btn-secondary" onclick="exportiereCSV(SPIELER.filter(p=>p.pool!=='archiv'),'talentpool')">CSV exportieren</button>` : ""}
     </div>
     <div class="kanban">
       ${Object.entries(POOL_LISTEN).map(([key, liste]) => {
@@ -1236,7 +1297,7 @@ function viewAdmin() {
         <div class="sub">Benutzerverwaltung &amp; System-Konfiguration</div></div>
     </div>
     <div class="tabs">
-      ${[["benutzer","👥 Benutzerverwaltung"],["score","⭐ Fortuna-Score konfigurieren"]]
+      ${[["benutzer","👥 Benutzerverwaltung"],["score","⭐ Fortuna-Score"],["rechte","🔐 Berechtigungen"]]
         .map(([k,t]) => `<button class="${adminTab===k?"active":""}" onclick="switchAdminTab('${k}')">${t}</button>`).join("")}
     </div>
     <div id="admin-tab-inhalt"></div>`;
@@ -1250,7 +1311,9 @@ window.switchAdminTab = switchAdminTab;
 function renderAdminTab() {
   const el = document.getElementById("admin-tab-inhalt");
   if (!el) return;
-  el.innerHTML = adminTab === "benutzer" ? adminTabBenutzer() : adminTabScore();
+  if (adminTab === "benutzer") el.innerHTML = adminTabBenutzer();
+  else if (adminTab === "score") el.innerHTML = adminTabScore();
+  else el.innerHTML = adminTabBerechtigungen();
 }
 window.renderAdminTab = renderAdminTab;
 
@@ -1321,6 +1384,65 @@ function adminTabScore() {
       </div>
     </div>`;
 }
+
+function adminTabBerechtigungen() {
+  const gesteuerteRollen = ROLLEN.filter(r => r !== "Administrator");
+  return `
+    <div class="card mt">
+      <h3>Berechtigungen pro Rolle</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+        Legt fest, welche Funktionen jede Rolle nutzen darf.
+        Administratoren haben immer Vollzugriff. Änderungen greifen sofort.
+      </p>
+      <div style="overflow-x:auto">
+        <table class="compare-table">
+          <thead><tr>
+            <th style="text-align:left;min-width:220px">Berechtigung</th>
+            ${gesteuerteRollen.map(r => `<th style="text-align:center">${r}</th>`).join("")}
+          </tr></thead>
+          <tbody>
+            ${ALLE_RECHTE.map(recht => `<tr>
+              <td style="font-size:13px">${esc(recht.label)}</td>
+              ${gesteuerteRollen.map(rolle => {
+                const hat = (BERECHTIGUNGEN[rolle] || []).includes(recht.id);
+                return `<td style="text-align:center">
+                  <input type="checkbox" ${hat ? "checked" : ""}
+                    onchange="rechtToggle('${rolle}','${recht.id}',this.checked)"
+                    style="width:16px;height:16px;cursor:pointer;accent-color:var(--rot)">
+                </td>`;
+              }).join("")}
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-actions" style="margin-top:20px">
+        <button class="btn btn-secondary" onclick="berechtigungenZuruecksetzen()">Standard wiederherstellen</button>
+      </div>
+    </div>`;
+}
+
+function rechtToggle(rolle, rechtId, aktiv) {
+  if (!BERECHTIGUNGEN[rolle]) BERECHTIGUNGEN[rolle] = [];
+  if (aktiv) {
+    if (!BERECHTIGUNGEN[rolle].includes(rechtId)) BERECHTIGUNGEN[rolle].push(rechtId);
+  } else {
+    BERECHTIGUNGEN[rolle] = BERECHTIGUNGEN[rolle].filter(r => r !== rechtId);
+  }
+  speichereBerechtigungen(BERECHTIGUNGEN);
+  const recht = ALLE_RECHTE.find(r => r.id === rechtId);
+  toast(`„${recht?.label || rechtId}" für ${rolle} ${aktiv ? "aktiviert" : "deaktiviert"}.`);
+  updateNav();
+}
+window.rechtToggle = rechtToggle;
+
+function berechtigungenZuruecksetzen() {
+  BERECHTIGUNGEN = JSON.parse(JSON.stringify(DEFAULT_BERECHTIGUNGEN));
+  speichereBerechtigungen(BERECHTIGUNGEN);
+  renderAdminTab();
+  updateNav();
+  toast("Berechtigungen auf Standard zurückgesetzt.");
+}
+window.berechtigungenZuruecksetzen = berechtigungenZuruecksetzen;
 
 function benutzerRolleSetzen(nutzername, rolle) {
   const u = BENUTZER.find(b => b.nutzername === nutzername);
