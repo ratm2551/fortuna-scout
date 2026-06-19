@@ -1857,7 +1857,7 @@ function csvVerarbeitenUndPreview(text) {
   };
   const cols = kopf.map(h => COL_MAP[h] || null);
   if (!cols.includes("vorname") || !cols.includes("nachname")) {
-    toast("CSV fehlt Pflichtfelder „Vorname" / „Nachname". Bitte Format prüfen."); return;
+    toast('CSV: Pflichtfelder "Vorname" und "Nachname" nicht gefunden. Bitte Format prüfen.'); return;
   }
   const kandidaten = zeilen.slice(1).map(zeile => {
     const obj = {};

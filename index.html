@@ -41,16 +41,6 @@
   <main id="main" class="main"></main>
 </div>
 <div id="modal-root"></div>
-<script>
-window.addEventListener("error", function(e) {
-  document.body.innerHTML = '<div style="padding:30px;font-family:monospace;background:#fff;color:#000">'
-    + '<h2 style="color:red">JavaScript-Fehler</h2>'
-    + '<p><strong>Nachricht:</strong> ' + e.message + '</p>'
-    + '<p><strong>Datei:</strong> ' + (e.filename||'?').split('/').pop() + '</p>'
-    + '<p><strong>Zeile:</strong> ' + e.lineno + ', <strong>Spalte:</strong> ' + e.colno + '</p>'
-    + '</div>';
-});
-</script>
 <script src="data.js"></script>
 <script src="statsbomb.js"></script>
 <script src="app.js"></script>
