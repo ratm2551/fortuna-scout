@@ -448,7 +448,15 @@ function viewSpielerDetail(id, tab) {
   main.innerHTML = `
     <div class="mb"><a class="link" href="#/spieler">← Zur Spielerdatenbank</a></div>
     <div class="player-head">
-      <div class="avatar">${esc(initialen(p))}</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div class="avatar" style="${p.foto ? "padding:0;overflow:hidden" : ""}">
+          ${p.foto ? `<img src="${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : esc(initialen(p))}
+        </div>
+        ${hatRecht("spieler_bearbeiten") ? `<div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick="fotoHochladen('${p.id}')" style="font-size:11px;padding:3px 8px">📷 ${p.foto ? "Ändern" : "Foto"}</button>
+          ${p.foto ? `<button class="btn btn-ghost btn-sm" onclick="fotoEntfernen('${p.id}')" style="font-size:11px;padding:3px 6px;color:var(--muted)" title="Foto entfernen">✕</button>` : ""}
+        </div>` : ""}
+      </div>
       <div>
         <h1>${esc(p.vorname)} ${esc(p.nachname)}</h1>
         <div class="player-meta">${esc(p.hauptposition)} · Jahrgang ${jahrgang(p)} (${alter(p)} Jahre) · ${esc(p.verein)} · ${esc(p.liga)}</div>
@@ -493,6 +501,39 @@ window.viewSpielerDetail = viewSpielerDetail;
 
 function setPool(id, pool) { findSpieler(id).pool = pool; speichern(); route(); }
 window.setPool = setPool;
+
+function fotoHochladen(id) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.onchange = function(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (f.size > 2 * 1024 * 1024) { toast("Bild zu groß – max. 2 MB erlaubt."); return; }
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const p = findSpieler(id);
+      if (!p) return;
+      p.foto = ev.target.result;
+      speichern();
+      toast("Foto gespeichert.");
+      viewSpielerDetail(id, aktiverTab);
+    };
+    reader.readAsDataURL(f);
+  };
+  input.click();
+}
+window.fotoHochladen = fotoHochladen;
+
+function fotoEntfernen(id) {
+  const p = findSpieler(id);
+  if (!p) return;
+  p.foto = null;
+  speichern();
+  toast("Foto entfernt.");
+  viewSpielerDetail(id, aktiverTab);
+}
+window.fotoEntfernen = fotoEntfernen;
 
 function tabProfil(p) {
   const zeile = (l, w) => `<tr><th style="width:180px">${l}</th><td>${w}</td></tr>`;
