@@ -39,15 +39,39 @@ function gesamtScore(p) {
   return Math.round((g.reduce((a, b) => a + b, 0) / g.length) * 10);
 }
 function potenzialScore(p) { return Math.round(gruppenSchnitt(p, "potenzial") * 10); }
+function getStatWert(p, feld) {
+  if (p.sbRef) {
+    if (feld === "xg" && p.sbRef.xg != null) return p.sbRef.xg;
+    if (feld === "xa" && p.sbRef.xa != null) return p.sbRef.xa;
+    if (feld === "tore" && p.sbRef.tore != null) return p.sbRef.tore;
+    if (feld === "vorlagen" && p.sbRef.assists != null) return p.sbRef.assists;
+  }
+  const v = (p.statistiken || {})[feld];
+  return v != null && v !== "" ? +v : null;
+}
 function fortunaFit(p) {
   const cfg = SCORE_CONFIG;
-  const total = cfg.technik + cfg.taktik + cfg.athletik + cfg.mentalitaet;
+  const gruppeKeys = ["technik","taktik","athletik","mentalitaet"];
+  const total = gruppeKeys.reduce((s,k) => s + (cfg[k]||0), 0)
+    + STAT_KRITERIEN.reduce((s,kr) => s + (cfg[kr.id]||0), 0);
   if (!total) return 0;
-  const raw = (gruppenSchnitt(p, "technik") * cfg.technik
-    + gruppenSchnitt(p, "taktik") * cfg.taktik
-    + gruppenSchnitt(p, "athletik") * cfg.athletik
-    + gruppenSchnitt(p, "mentalitaet") * cfg.mentalitaet) / total;
-  return Math.round(raw * 10);
+  let score = 0;
+  for (const k of gruppeKeys) {
+    const w = cfg[k] || 0;
+    if (w) score += gruppenSchnitt(p, k) * 10 * w;
+  }
+  for (const kr of STAT_KRITERIEN) {
+    const w = cfg[kr.id] || 0;
+    if (!w) continue;
+    const refMax = cfg["ref_" + kr.feld] || kr.refDefault;
+    const wert = getStatWert(p, kr.feld);
+    if (wert == null) continue;
+    const s = kr.invers
+      ? (refMax > 1 ? Math.max(0, 1 - (Math.max(wert - 1, 0) / (refMax - 1))) : (wert <= 1 ? 1 : 0)) * 100
+      : Math.min(Math.max(wert, 0) / refMax, 1) * 100;
+    score += s * w;
+  }
+  return Math.round(score / total);
 }
 function scorePill(wert) {
   const cls = wert >= 75 ? "score-hoch" : wert >= 55 ? "score-mittel" : "score-niedrig";
@@ -72,8 +96,26 @@ function speichereBenutzer() { localStorage.setItem(USERS_KEY, JSON.stringify(BE
 let BENUTZER = ladeBenutzer();
 
 // ---------- Fortuna-Score-Konfiguration ----------
-const SCORE_CONFIG_KEY = "fortuna-score-config-v1";
-const DEFAULT_SCORE_CONFIG = { technik: 10, taktik: 25, athletik: 20, mentalitaet: 45 };
+const SCORE_CONFIG_KEY = "fortuna-score-config-v2";
+const STAT_KRITERIEN = [
+  { id: "stat_xg",       label: "xG (Erwartete Tore)",     feld: "xg",       einheit: "xG",    refDefault: 15,  invers: false },
+  { id: "stat_xa",       label: "xA (Erwartete Assists)",   feld: "xa",       einheit: "xA",    refDefault: 10,  invers: false },
+  { id: "stat_postxg",   label: "Post-xG (nach Schuss)",    feld: "postxg",   einheit: "pxG",   refDefault: 15,  invers: false },
+  { id: "stat_tore",     label: "Tore",                      feld: "tore",     einheit: "Tore",  refDefault: 25,  invers: false },
+  { id: "stat_vorlagen", label: "Vorlagen (Assists)",        feld: "vorlagen", einheit: "Ass.",  refDefault: 20,  invers: false },
+  { id: "stat_lauf",     label: "Laufleistung (km/Spiel)",  feld: "lauf",     einheit: "km",    refDefault: 12,  invers: false },
+  { id: "stat_karriere", label: "Spiele in Karriere",        feld: "karriere", einheit: "Sp.",   refDefault: 300, invers: false },
+  { id: "stat_vereine",  label: "Anzahl Vereine (invers)",   feld: "vereine",  einheit: "Ver.",  refDefault: 5,   invers: true  },
+  { id: "stat_xt",       label: "Expected Threat (xT)",      feld: "xt",       einheit: "xT",    refDefault: 5,   invers: false },
+  { id: "stat_pitch",    label: "Pitch Control (%)",          feld: "pitch",    einheit: "%",     refDefault: 100, invers: false },
+];
+const DEFAULT_SCORE_CONFIG = {
+  technik: 10, taktik: 25, athletik: 20, mentalitaet: 45,
+  stat_xg: 0, stat_xa: 0, stat_postxg: 0, stat_tore: 0, stat_vorlagen: 0,
+  stat_lauf: 0, stat_karriere: 0, stat_vereine: 0, stat_xt: 0, stat_pitch: 0,
+  ref_xg: 15, ref_xa: 10, ref_postxg: 15, ref_tore: 25, ref_vorlagen: 20,
+  ref_lauf: 12, ref_karriere: 300, ref_vereine: 5, ref_xt: 5, ref_pitch: 100,
+};
 function ladeScoreConfig() {
   try { const s = localStorage.getItem(SCORE_CONFIG_KEY); if (s) return JSON.parse(s); } catch {}
   return { ...DEFAULT_SCORE_CONFIG };
@@ -328,8 +370,9 @@ function viewSpielerListe() {
   main.innerHTML = `
     <div class="page-header">
       <div><h1>Spielerdatenbank</h1><div class="sub">${SPIELER.length} Spieler erfasst</div></div>
-      <div style="display:flex;gap:8px">
-        ${hatRecht("csv_export") ? `<button class="btn btn-secondary" onclick="exportiereCSV(gefilterteSpieler(),'spielerdatenbank')">CSV exportieren</button>` : ""}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${hatRecht("csv_export") ? `<button class="btn btn-secondary" onclick="exportiereCSV(gefilterteSpieler(),'spielerdatenbank')">↓ CSV exportieren</button>` : ""}
+        ${hatRecht("spieler_anlegen") ? `<button class="btn btn-secondary" onclick="csvImportieren()">↑ CSV importieren</button>` : ""}
         ${hatRecht("spieler_anlegen") ? `<button class="btn" onclick="modalNeuerSpieler()">+ Neuer Spieler</button>` : ""}
       </div>
     </div>
@@ -413,6 +456,7 @@ function viewSpielerDetail(id, tab) {
           Pool: <select onchange="setPool('${p.id}', this.value)" style="padding:4px 6px;border-radius:6px;border:1px solid var(--border)">
             ${Object.entries(POOL_LISTEN).map(([k, v]) => `<option value="${k}" ${p.pool === k ? "selected" : ""}>${v.titel}</option>`).join("")}
           </select>
+          ${hatRecht("spieler_bearbeiten") ? `<button class="btn btn-ghost btn-sm" onclick="modalSpielerBearbeiten('${p.id}')">✏️ Bearbeiten</button>` : ""}
           ${hatRecht("spieler_loeschen") ? `<button class="btn btn-ghost btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="spielerLoeschen('${p.id}')">🗑 Löschen</button>` : ""}
         </div>
       </div>
@@ -430,6 +474,7 @@ function viewSpielerDetail(id, tab) {
         ["videos",     `Videos (${p.videos.length})`,                     "videos"],
         ["entwicklung","Entwicklungsmonitor",                             "entwicklung"],
         ["extern",     `Externe Quellen (${(p.externeQuellen||[]).length})`, null],
+        ["notizen",    "Notizen",                                         null],
       ].filter(([,,r]) => !r || hatRecht(r))
        .map(([k, t]) => `<button class="${aktiverTab === k ? "active" : ""}" onclick="viewSpielerDetail('${p.id}','${k}')">${t}</button>`).join("")}
     </div>
@@ -442,6 +487,7 @@ function viewSpielerDetail(id, tab) {
   else if (aktiverTab === "videos") inhalt.innerHTML = tabVideos(p);
   else if (aktiverTab === "entwicklung") inhalt.innerHTML = tabEntwicklung(p);
   else if (aktiverTab === "extern") inhalt.innerHTML = tabExterneQuellen(p);
+  else if (aktiverTab === "notizen") inhalt.innerHTML = tabNotizen(p);
 }
 window.viewSpielerDetail = viewSpielerDetail;
 
@@ -480,10 +526,35 @@ function tabProfil(p) {
     </div>
     <div style="font-size:12px;color:var(--muted);margin-top:10px">Echtes StatsBomb-xG-Modell aus Schussdaten · Tore: ${p.sbRef.tore} · Assists: ${p.sbRef.assists} · Einsätze im Datensatz: ${p.sbRef.einsaetze}</div>
   </div>` : ""}
-  <div class="card mt"><h3>🤖 KI-Kurzprofil (Prototyp)</h3><p style="font-size:13.5px;line-height:1.6">${kiKurzprofil(p)}</p></div>`;
+  <div class="card mt"><h3>🤖 KI-Kurzprofil (Prototyp)</h3><p style="font-size:13.5px;line-height:1.6">${kiKurzprofil(p)}</p></div>
+  ${hatRecht("spieler_bearbeiten") ? `
+  <div class="card mt">
+    <h3>📊 Statistiken <span style="font-size:12px;font-weight:400;color:var(--muted)">(manuell erfasst · werden durch StatsBomb-Daten ergänzt)</span></h3>
+    <div class="form-grid">
+      ${STAT_KRITERIEN.map(kr => {
+        const v = (p.statistiken || {})[kr.feld];
+        const sbVal = kr.feld === "xg" ? p.sbRef?.xg : kr.feld === "xa" ? p.sbRef?.xa : kr.feld === "tore" ? p.sbRef?.tore : kr.feld === "vorlagen" ? p.sbRef?.assists : null;
+        return `<div class="field">
+          <label>${kr.label} (${kr.einheit})${sbVal != null ? ` <span style="color:var(--gruen);font-size:11px">StatsBomb: ${sbVal}</span>` : ""}</label>
+          <input type="number" min="0" step="any" value="${v ?? ""}" placeholder="–"
+            oninput="setStatFeld('${p.id}','${kr.feld}',this.value)"
+            style="border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--bg-card);color:var(--text)">
+        </div>`;
+      }).join("")}
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px">Änderungen werden beim Verlassen des Feldes gespeichert. StatsBomb-Werte haben im Score-Modell Vorrang.</div>
+  </div>` : ""}`;
 }
 function setFeld(id, feld, wert) { findSpieler(id)[feld] = wert; speichern(); }
 window.setFeld = setFeld;
+function setStatFeld(id, feld, wert) {
+  const p = findSpieler(id);
+  if (!p) return;
+  if (!p.statistiken) p.statistiken = {};
+  p.statistiken[feld] = wert === "" ? null : +wert;
+  speichern();
+}
+window.setStatFeld = setStatFeld;
 
 function kiKurzprofil(p) {
   const g = gesamtScore(p), pot = potenzialScore(p), fit = fortunaFit(p);
@@ -645,6 +716,31 @@ function externWertUebernehmen(id, idx) {
   }
 }
 window.externWertUebernehmen = externWertUebernehmen;
+
+function tabNotizen(p) {
+  const kannBearbeiten = hatRecht("spieler_bearbeiten");
+  return `<div class="card">
+    <div class="flex-between mb">
+      <h3 style="margin:0">Notizen & interne Einschätzung</h3>
+      <span style="font-size:12px;color:var(--muted)">Nur intern sichtbar</span>
+    </div>
+    <textarea id="notizen-ta" rows="16"
+      style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--bg-card);color:var(--text);font-size:14px;line-height:1.65;resize:vertical;font-family:inherit"
+      placeholder="Persönliche Notizen – z.B. Beobachtungshinweise, Gesprächsnotizen, Einschätzungen…"
+      ${kannBearbeiten ? "" : "readonly"}>${esc(p.notizen || "")}</textarea>
+    ${kannBearbeiten ? `<div class="modal-actions" style="margin-top:12px">
+      <button class="btn" onclick="notizenSpeichern('${p.id}',document.getElementById('notizen-ta').value)">💾 Notiz speichern</button>
+    </div>` : ""}
+  </div>`;
+}
+function notizenSpeichern(id, text) {
+  const p = findSpieler(id);
+  if (!p) return;
+  p.notizen = text;
+  speichern();
+  toast("Notiz gespeichert.");
+}
+window.notizenSpeichern = notizenSpeichern;
 
 function tabVideos(p) {
   return `<div class="flex-between mb">
@@ -1015,6 +1111,8 @@ function modalNeuerSpieler() {
       erstelltAm: HEUTE.toISOString().slice(0, 10),
       ratings: leereRatings(), videos: [], berichte: [], entwicklung: [],
     };
+    neu.notizen = "";
+    neu.statistiken = {};
     SPIELER.push(neu);
     speichern();
     schliesseModal();
@@ -1022,6 +1120,69 @@ function modalNeuerSpieler() {
   });
 }
 window.modalNeuerSpieler = modalNeuerSpieler;
+
+function modalSpielerBearbeiten(id) {
+  const p = findSpieler(id);
+  if (!p) return;
+  zeigeModal(`
+    <h2>Spieler bearbeiten – ${esc(p.vorname)} ${esc(p.nachname)}</h2>
+    <form id="modal-form">
+      <div class="form-grid">
+        ${feld("Vorname *", "vorname", "text", `required value="${esc(p.vorname)}"`)}
+        ${feld("Nachname *", "nachname", "text", `required value="${esc(p.nachname)}"`)}
+        ${feld("Geburtsdatum *", "geburtsdatum", "date", `required value="${p.geburtsdatum || ""}"`)}
+        ${feld("Nationalität", "nationalitaet", "text", `value="${esc(p.nationalitaet || "")}"`)}
+        ${feld("Verein *", "verein", "text", `required value="${esc(p.verein)}"`)}
+        ${feld("Liga", "liga", "text", `value="${esc(p.liga || "")}"`)}
+        ${feld("Verband", "verband", "text", `value="${esc(p.verband || "")}"`)}
+        ${feld("Größe (cm)", "groesse", "number", `value="${p.groesse || ""}"`)}
+        ${feld("Gewicht (kg)", "gewicht", "number", `value="${p.gewicht || ""}"`)}
+        ${feld("Starker Fuß", "starkerFuss", "text", "", ["Rechts", "Links", "Beidfüßig"])}
+        ${feld("Schwacher Fuß (1–5)", "schwacherFuss", "number", `min="1" max="5" value="${p.schwacherFuss || 3}"`)}
+        ${feld("Hauptposition *", "hauptposition", "text", "required", POSITIONEN)}
+        ${feld("Vertragsstatus", "vertragsstatus", "text", `value="${esc(p.vertragsstatus || "")}"`)}
+        ${feld("Vertragsende", "vertragsende", "date", `value="${p.vertragsende || ""}"`)}
+        ${feld("Berater", "berater", "text", `value="${esc(p.berater || "")}"`)}
+        ${feld("Kontakt", "kontakt", "text", `value="${esc(p.kontakt || "")}"`)}
+      </div>
+      <div class="field mt"><label>Nebenpositionen (Mehrfachauswahl mit Strg)</label>
+        <select name="nebenpositionen" multiple size="4">${POSITIONEN.map(pos => `<option ${(p.nebenpositionen||[]).includes(pos) ? "selected" : ""}>${pos}</option>`).join("")}</select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+        <button type="submit" class="btn">Änderungen speichern</button>
+      </div>
+    </form>`, fd => {
+    p.vorname = fd.get("vorname");
+    p.nachname = fd.get("nachname");
+    p.geburtsdatum = fd.get("geburtsdatum");
+    p.nationalitaet = fd.get("nationalitaet") || "Deutschland";
+    p.verein = fd.get("verein");
+    p.liga = fd.get("liga") || "";
+    p.verband = fd.get("verband") || "";
+    p.groesse = +fd.get("groesse") || 0;
+    p.gewicht = +fd.get("gewicht") || 0;
+    p.starkerFuss = fd.get("starkerFuss");
+    p.schwacherFuss = Math.min(5, Math.max(1, +fd.get("schwacherFuss") || 3));
+    p.hauptposition = fd.get("hauptposition");
+    p.nebenpositionen = fd.getAll("nebenpositionen");
+    p.vertragsstatus = fd.get("vertragsstatus") || "";
+    p.vertragsende = fd.get("vertragsende") || "";
+    p.berater = fd.get("berater") || "";
+    p.kontakt = fd.get("kontakt") || "";
+    speichern();
+    schliesseModal();
+    toast("Spielerprofil gespeichert.");
+    viewSpielerDetail(id, aktiverTab);
+  });
+  setTimeout(() => {
+    const sfSel = document.querySelector('[name="starkerFuss"]');
+    if (sfSel) sfSel.value = p.starkerFuss || "Rechts";
+    const hpSel = document.querySelector('[name="hauptposition"]');
+    if (hpSel) hpSel.value = p.hauptposition || "";
+  }, 0);
+}
+window.modalSpielerBearbeiten = modalSpielerBearbeiten;
 
 function modalNeuerBericht(id) {
   zeigeModal(`
@@ -1349,38 +1510,65 @@ function adminTabBenutzer() {
 
 function adminTabScore() {
   const cfg = SCORE_CONFIG;
-  const gesamt = cfg.technik + cfg.taktik + cfg.athletik + cfg.mentalitaet;
+  const allKeys = ["technik","taktik","athletik","mentalitaet",...STAT_KRITERIEN.map(k=>k.id)];
+  const gesamt = allKeys.reduce((s,k) => s + (cfg[k]||0), 0);
   const ok = gesamt === 100;
   return `
     <div class="card mt">
       <h3>Fortuna-Fit Gewichtung</h3>
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px">
-        Der Fortuna-Fit-Score berechnet sich als gewichtetes Mittel der vier Bewertungsgruppen.
-        Die Summe aller Gewichte muss genau 100 % ergeben.
+        Der Fortuna-Fit-Score berechnet sich als gewichtetes Mittel aller aktiven Kriterien.
+        Statistik-Kriterien mit Gewicht 0 werden ignoriert.
+        Die Summe <strong>aller</strong> Gewichte muss genau 100 % ergeben.
       </p>
+
+      <h4 style="margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Bewertungsgruppen</h4>
       <div class="form-grid">
         ${["technik","taktik","athletik","mentalitaet"].map(k => `
           <div class="field">
             <label>${RATING_MODELL[k].titel}
-              <strong style="color:var(--rot);margin-left:6px" id="sc-${k}-val">${cfg[k]}%</strong>
+              <strong style="color:var(--rot);margin-left:6px" id="sc-${k}-val">${cfg[k]||0}%</strong>
             </label>
-            <input type="range" min="0" max="100" value="${cfg[k]}" id="sc-${k}"
+            <input type="range" min="0" max="100" value="${cfg[k]||0}" id="sc-${k}"
               oninput="scoreSliderUpdate('${k}',this.value)" style="width:100%">
           </div>`).join("")}
       </div>
-      <div style="margin-top:16px;font-size:14px;font-weight:600" id="score-summe">
+
+      <h4 style="margin:24px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Statistik-Kriterien</h4>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Gewicht 0 = deaktiviert. Referenzwert = Maximalwert für Normalisierung auf 100 %.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${STAT_KRITERIEN.map(kr => {
+          const w = cfg[kr.id] || 0;
+          const ref = cfg["ref_" + kr.feld] || kr.refDefault;
+          return `<div style="display:grid;grid-template-columns:1fr 140px;gap:12px;align-items:center;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:${w>0?"rgba(211,25,32,.06)":"transparent"}">
+            <div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px">${kr.label}${kr.invers ? ` <span style="font-size:11px;font-weight:400;color:var(--muted)">(invers)</span>` : ""}</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <input type="range" min="0" max="50" value="${w}" id="sc-${kr.id}"
+                  oninput="scoreSliderUpdate('${kr.id}',this.value)" style="flex:1;accent-color:var(--rot)">
+                <strong style="color:var(--rot);min-width:30px;text-align:right" id="sc-${kr.id}-val">${w}%</strong>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">Referenzwert (${kr.einheit})</label>
+              <input type="number" min="0.01" step="any" value="${ref}"
+                onchange="scoreRefUpdate('${kr.feld}',this.value)"
+                style="width:100%;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;background:var(--bg-card);color:var(--text)">
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+
+      <div style="margin-top:20px;font-size:14px;font-weight:600" id="score-summe">
         Summe: <span style="color:${ok?"var(--gruen)":"var(--rot)"}">${gesamt}%</span>
-        ${ok?"":"&nbsp;⚠️ muss 100 ergeben"}
+        ${ok ? "" : "&nbsp;⚠️ muss 100 ergeben"}
       </div>
-      <div style="margin-top:10px;font-size:12px;color:var(--muted)" id="score-formel">
-        Formel: ${["technik","taktik","athletik","mentalitaet"].map(k=>`${cfg[k]}% × ${RATING_MODELL[k].titel}`).join(" + ")}
+      <div style="margin-top:6px;font-size:12px;color:var(--muted)">
+        Standard: Technik 10 % · Taktik 25 % · Athletik 20 % · Mentalität 45 % · Alle Statistiken 0 %
       </div>
-      <div style="margin-top:10px;font-size:12px;color:var(--muted)">
-        Standardwerte: Technik 10% · Taktik 25% · Athletik 20% · Mentalität 45%
-      </div>
-      <div class="modal-actions" style="margin-top:20px">
+      <div class="modal-actions" style="margin-top:16px">
         <button class="btn btn-secondary" onclick="scoreZuruecksetzen()">Standard wiederherstellen</button>
-        <button class="btn" id="score-speichern-btn" onclick="scoreSpeichern()" ${ok?"":"disabled"}>✓ Speichern &amp; anwenden</button>
+        <button class="btn" id="score-speichern-btn" onclick="scoreSpeichern()" ${ok ? "" : "disabled"}>✓ Speichern &amp; anwenden</button>
       </div>
     </div>`;
 }
@@ -1529,17 +1717,20 @@ window.modalNeuerBenutzer = modalNeuerBenutzer;
 function scoreSliderUpdate(key, value) {
   SCORE_CONFIG[key] = +value;
   const valEl = document.getElementById(`sc-${key}-val`);
-  if (valEl) valEl.textContent = value + "%";
-  const gesamt = ["technik","taktik","athletik","mentalitaet"].reduce((s,k) => s + SCORE_CONFIG[k], 0);
+  if (valEl) valEl.textContent = (+value) + "%";
+  const allKeys = ["technik","taktik","athletik","mentalitaet",...STAT_KRITERIEN.map(k=>k.id)];
+  const gesamt = allKeys.reduce((s,k) => s + (SCORE_CONFIG[k]||0), 0);
   const ok = gesamt === 100;
   const sumEl = document.getElementById("score-summe");
   if (sumEl) sumEl.innerHTML = `Summe: <span style="color:${ok?"var(--gruen)":"var(--rot)"}">${gesamt}%</span>${ok?"":" &nbsp;⚠️ muss 100 ergeben"}`;
-  const formelEl = document.getElementById("score-formel");
-  if (formelEl) formelEl.textContent = "Formel: " + ["technik","taktik","athletik","mentalitaet"].map(k=>`${SCORE_CONFIG[k]}% × ${RATING_MODELL[k].titel}`).join(" + ");
   const btn = document.getElementById("score-speichern-btn");
   if (btn) btn.disabled = !ok;
 }
 window.scoreSliderUpdate = scoreSliderUpdate;
+function scoreRefUpdate(feld, value) {
+  SCORE_CONFIG["ref_" + feld] = +value || 1;
+}
+window.scoreRefUpdate = scoreRefUpdate;
 
 function scoreSpeichern() {
   speichereScoreConfig();
@@ -1613,6 +1804,136 @@ function exportiereCSV(spielerListe, dateiname) {
   toast(`${spielerListe.length} Spieler als CSV exportiert.`);
 }
 window.exportiereCSV = exportiereCSV;
+
+// ---------- CSV-Import ----------
+let _csvKandidaten = null;
+
+function csvImportieren() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".csv,text/csv";
+  input.onchange = e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => csvVerarbeitenUndPreview(ev.target.result);
+    reader.readAsText(f, "UTF-8");
+  };
+  input.click();
+}
+window.csvImportieren = csvImportieren;
+
+function csvZeilenParsern(text) {
+  const clean = text.replace(/^﻿/, "");
+  const sep = (clean.split("\n")[0] || "").includes(";") ? ";" : ",";
+  return clean.split(/\r?\n/).filter(z => z.trim()).map(z => {
+    const felder = [];
+    let cur = "", inQ = false;
+    for (let i = 0; i < z.length; i++) {
+      const c = z[i];
+      if (c === '"') { if (inQ && z[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+      else if (c === sep && !inQ) { felder.push(cur); cur = ""; }
+      else cur += c;
+    }
+    felder.push(cur);
+    return felder;
+  });
+}
+
+function csvVerarbeitenUndPreview(text) {
+  const zeilen = csvZeilenParsern(text);
+  if (zeilen.length < 2) { toast("CSV enthält keine Daten."); return; }
+  const kopf = zeilen[0].map(h => h.trim());
+  const COL_MAP = {
+    "Vorname": "vorname", "Nachname": "nachname", "Position": "hauptposition",
+    "Verein": "verein", "Liga": "liga", "Pool": "pool",
+    "Nationalität": "nationalitaet", "Nationalitaet": "nationalitaet", "Jahrgang": "jahrgang",
+    "Marktwert (EUR)": "marktwert", "Vertragsende": "vertragsende",
+    "xG": "_xg", "xA": "_xa", "Tore": "_tore", "Assists": "_vorlagen",
+    "Laufleistung": "_lauf", "Karrierespiele": "_karriere",
+  };
+  const cols = kopf.map(h => COL_MAP[h] || null);
+  if (!cols.includes("vorname") || !cols.includes("nachname")) {
+    toast("CSV fehlt Pflichtfelder „Vorname" / „Nachname". Bitte Format prüfen."); return;
+  }
+  const kandidaten = zeilen.slice(1).map(zeile => {
+    const obj = {};
+    cols.forEach((k, i) => { if (k) obj[k] = (zeile[i] || "").trim(); });
+    return obj;
+  }).filter(o => o.vorname && o.nachname);
+  if (!kandidaten.length) { toast("Keine gültigen Zeilen gefunden."); return; }
+  _csvKandidaten = kandidaten;
+
+  const root = $("#modal-root");
+  root.innerHTML = `<div class="modal-backdrop"><div class="modal" style="max-width:720px;width:95vw">
+    <h2>CSV-Import · ${kandidaten.length} Spieler erkannt</h2>
+    <p style="color:var(--muted);font-size:13px;margin:8px 0 16px">Vorschau der ersten 5 Zeilen. Spieler mit bereits vorhandenem Namen werden übersprungen.</p>
+    <div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+      <table style="font-size:12.5px;min-width:500px">
+        <thead><tr><th>Vorname</th><th>Nachname</th><th>Position</th><th>Verein</th><th>Liga</th><th>Pool</th></tr></thead>
+        <tbody>${kandidaten.slice(0, 5).map(c => `<tr>
+          <td>${esc(c.vorname)}</td><td>${esc(c.nachname)}</td>
+          <td>${esc(c.hauptposition||"–")}</td><td>${esc(c.verein||"–")}</td>
+          <td>${esc(c.liga||"–")}</td><td>${esc(c.pool||"–")}</td>
+        </tr>`).join("")}
+        ${kandidaten.length > 5 ? `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:8px">… und ${kandidaten.length - 5} weitere</td></tr>` : ""}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-actions" style="margin-top:18px">
+      <button class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+      <button class="btn" onclick="csvImportBestaetigen()">✓ ${kandidaten.length} Spieler importieren</button>
+    </div>
+  </div></div>`;
+  $(".modal-backdrop").addEventListener("click", e => { if (e.target.classList.contains("modal-backdrop")) schliesseModal(); });
+}
+
+function csvImportBestaetigen() {
+  const kandidaten = _csvKandidaten;
+  if (!kandidaten) return;
+  _csvKandidaten = null;
+  const POOL_MAP = { "Beobachtung": "beobachten", "Probetraining": "probetraining", "Verpflichtung": "verpflichtung", "Archiv": "archiv" };
+  let neu = 0;
+  for (const k of kandidaten) {
+    const exists = SPIELER.find(p =>
+      p.vorname.toLowerCase() === k.vorname.toLowerCase() &&
+      p.nachname.toLowerCase() === k.nachname.toLowerCase()
+    );
+    if (exists) continue;
+    const geb = k.jahrgang && /^\d{4}$/.test(k.jahrgang) ? k.jahrgang + "-07-01" : "";
+    const stats = {};
+    if (k._xg)       stats.xg       = +k._xg;
+    if (k._xa)       stats.xa       = +k._xa;
+    if (k._tore)     stats.tore     = +k._tore;
+    if (k._vorlagen) stats.vorlagen = +k._vorlagen;
+    if (k._lauf)     stats.lauf     = +k._lauf;
+    if (k._karriere) stats.karriere = +k._karriere;
+    SPIELER.push({
+      id: "p" + Date.now() + Math.random().toString(36).slice(2, 6),
+      vorname: k.vorname, nachname: k.nachname,
+      geburtsdatum: geb, nationalitaet: k.nationalitaet || "Deutschland",
+      verein: k.verein || "", liga: k.liga || "", verband: "",
+      groesse: 0, gewicht: 0, starkerFuss: "Rechts", schwacherFuss: 3,
+      hauptposition: k.hauptposition || "Mittelfeld (Zentral)",
+      nebenpositionen: [],
+      vertragsstatus: "", vertragsende: k.vertragsende || "",
+      berater: "", kontakt: "",
+      marktwert: k.marktwert ? (+k.marktwert || null) : null,
+      pool: POOL_MAP[k.pool] || "beobachten",
+      trialStatus: "Keine", trialUrteil: "",
+      erstelltAm: HEUTE.toISOString().slice(0, 10),
+      ratings: leereRatings(), videos: [], berichte: [], entwicklung: [],
+      notizen: "", statistiken: stats,
+    });
+    neu++;
+  }
+  speichern();
+  schliesseModal();
+  const skip = kandidaten.length - neu;
+  toast(`${neu} Spieler importiert${skip ? ` · ${skip} übersprungen (Name vorhanden)` : ""}.`);
+  viewSpielerListe();
+}
+window.csvImportBestaetigen = csvImportBestaetigen;
 
 // ---------- Init ----------
 $("#resetData").addEventListener("click", () => {
