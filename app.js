@@ -40,12 +40,14 @@ function gesamtScore(p) {
 }
 function potenzialScore(p) { return Math.round(gruppenSchnitt(p, "potenzial") * 10); }
 function fortunaFit(p) {
-  // Gewichtung: Mentalität & Entwicklungsfähigkeit im Fokus der Fortuna-Philosophie
-  const fit = gruppenSchnitt(p, "mentalitaet") * 0.3
-    + (p.ratings.entwicklung || 0) * 0.25
-    + gruppenSchnitt(p, "athletik") * 0.2
-    + gruppenSchnitt(p, "taktik") * 0.25;
-  return Math.round(fit * 10);
+  const cfg = SCORE_CONFIG;
+  const total = cfg.technik + cfg.taktik + cfg.athletik + cfg.mentalitaet;
+  if (!total) return 0;
+  const raw = (gruppenSchnitt(p, "technik") * cfg.technik
+    + gruppenSchnitt(p, "taktik") * cfg.taktik
+    + gruppenSchnitt(p, "athletik") * cfg.athletik
+    + gruppenSchnitt(p, "mentalitaet") * cfg.mentalitaet) / total;
+  return Math.round(raw * 10);
 }
 function scorePill(wert) {
   const cls = wert >= 75 ? "score-hoch" : wert >= 55 ? "score-mittel" : "score-niedrig";
@@ -53,22 +55,41 @@ function scorePill(wert) {
 }
 
 // ---------- Authentifizierung ----------
-const BENUTZER = [
-  { nutzername: "koordinator", passwort: "f95scout",   rolle: "Koordinator" },
-  { nutzername: "scout",       passwort: "scout123",   rolle: "Scout" },
-  { nutzername: "trainer",     passwort: "trainer123", rolle: "Trainer" },
-  { nutzername: "admin",       passwort: "admin2024",  rolle: "Administrator" },
-];
+const ROLLEN = ["Koordinator", "Scout", "Trainer", "Administrator"];
+const USERS_KEY = "fortuna-users-v1";
 const SESSION_KEY = "fortuna-session";
+const DEFAULT_USERS = [
+  { nutzername: "koordinator", passwort: "f95scout",   rolle: "Koordinator",   gesperrt: false },
+  { nutzername: "scout",       passwort: "scout123",   rolle: "Scout",         gesperrt: false },
+  { nutzername: "trainer",     passwort: "trainer123", rolle: "Trainer",       gesperrt: false },
+  { nutzername: "admin",       passwort: "admin2024",  rolle: "Administrator", gesperrt: false },
+];
+function ladeBenutzer() {
+  try { const s = localStorage.getItem(USERS_KEY); if (s) return JSON.parse(s); } catch {}
+  return DEFAULT_USERS.map(u => ({ ...u }));
+}
+function speichereBenutzer() { localStorage.setItem(USERS_KEY, JSON.stringify(BENUTZER)); }
+let BENUTZER = ladeBenutzer();
+
+// ---------- Fortuna-Score-Konfiguration ----------
+const SCORE_CONFIG_KEY = "fortuna-score-config-v1";
+const DEFAULT_SCORE_CONFIG = { technik: 10, taktik: 25, athletik: 20, mentalitaet: 45 };
+function ladeScoreConfig() {
+  try { const s = localStorage.getItem(SCORE_CONFIG_KEY); if (s) return JSON.parse(s); } catch {}
+  return { ...DEFAULT_SCORE_CONFIG };
+}
+function speichereScoreConfig() { localStorage.setItem(SCORE_CONFIG_KEY, JSON.stringify(SCORE_CONFIG)); }
+let SCORE_CONFIG = ladeScoreConfig();
 
 function aktuellerNutzer() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
 }
 function anmelden(nutzername, passwort) {
-  const u = BENUTZER.find(b => b.nutzername === nutzername && b.passwort === passwort);
-  if (!u) return false;
+  const u = BENUTZER.find(b => b.nutzername === nutzername);
+  if (!u || u.passwort !== passwort) return { ok: false, fehler: "Benutzername oder Passwort falsch." };
+  if (u.gesperrt) return { ok: false, fehler: "Dieser Zugang wurde gesperrt. Bitte Administrator kontaktieren." };
   sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nutzername: u.nutzername, rolle: u.rolle }));
-  return true;
+  return { ok: true };
 }
 function abmelden() {
   sessionStorage.removeItem(SESSION_KEY);
@@ -114,22 +135,43 @@ function viewLogin() {
   const tryLogin = () => {
     const u = (document.getElementById("login-user")?.value || "").trim().toLowerCase();
     const pw = document.getElementById("login-pw")?.value || "";
-    if (anmelden(u, pw)) {
+    const result = anmelden(u, pw);
+    if (result.ok) {
       root.innerHTML = "";
       const layout = document.querySelector(".layout");
       if (layout) layout.style.display = "";
       const nutzer = aktuellerNutzer();
       const sel = document.getElementById("roleSelect");
       if (sel && nutzer?.rolle) sel.value = nutzer.rolle;
+      updateNav();
       route();
     } else {
       const err = document.getElementById("login-fehler");
-      if (err) err.style.display = "block";
+      if (err) { err.style.display = "block"; err.textContent = result.fehler; }
     }
   };
   document.getElementById("login-btn")?.addEventListener("click", tryLogin);
   document.getElementById("login-pw")?.addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); });
   document.getElementById("login-user")?.addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("login-pw")?.focus(); });
+}
+
+function updateNav() {
+  const nav = document.getElementById("nav");
+  if (!nav) return;
+  nav.querySelector('a[data-route="admin"]')?.remove();
+  nav.querySelector(".nav-admin-section")?.remove();
+  const nutzer = aktuellerNutzer();
+  if (nutzer?.rolle === "Administrator") {
+    const sec = document.createElement("div");
+    sec.className = "nav-section nav-admin-section";
+    sec.textContent = "System";
+    const link = document.createElement("a");
+    link.href = "#/admin";
+    link.dataset.route = "admin";
+    link.textContent = "⚙️ Administration";
+    nav.appendChild(sec);
+    nav.appendChild(link);
+  }
 }
 
 // ---------- Routing ----------
@@ -148,6 +190,7 @@ function route() {
     probetraining: viewProbetraining,
     bundesliga: viewBundesliga,
     profilsuche: viewProfilsuche,
+    admin: viewAdmin,
   };
   (views[seite] || viewDashboard)();
   main.scrollTop = 0;
@@ -1182,6 +1225,219 @@ function renderSbTabelle() {
   main.querySelector("#sb-progress")?.remove();
   viewBundesliga();
 }
+
+// ---------- Administration ----------
+let adminTab = "benutzer";
+
+function viewAdmin() {
+  const nutzer = aktuellerNutzer();
+  if (nutzer?.rolle !== "Administrator") {
+    main.innerHTML = `<div class="card mt"><div class="empty">🔒 Kein Zugriff – nur für Administratoren.</div></div>`;
+    return;
+  }
+  main.innerHTML = `
+    <div class="page-header">
+      <div><h1>⚙️ Administration</h1>
+        <div class="sub">Benutzerverwaltung &amp; System-Konfiguration</div></div>
+    </div>
+    <div class="tabs">
+      ${[["benutzer","👥 Benutzerverwaltung"],["score","⭐ Fortuna-Score konfigurieren"]]
+        .map(([k,t]) => `<button class="${adminTab===k?"active":""}" onclick="switchAdminTab('${k}')">${t}</button>`).join("")}
+    </div>
+    <div id="admin-tab-inhalt"></div>`;
+  renderAdminTab();
+}
+window.viewAdmin = viewAdmin;
+
+function switchAdminTab(tab) { adminTab = tab; renderAdminTab(); }
+window.switchAdminTab = switchAdminTab;
+
+function renderAdminTab() {
+  const el = document.getElementById("admin-tab-inhalt");
+  if (!el) return;
+  el.innerHTML = adminTab === "benutzer" ? adminTabBenutzer() : adminTabScore();
+}
+window.renderAdminTab = renderAdminTab;
+
+function adminTabBenutzer() {
+  const ich = aktuellerNutzer()?.nutzername;
+  return `
+    <div class="flex-between mb" style="margin-top:16px">
+      <h3 style="margin:0">Zugänge (${BENUTZER.length})</h3>
+      <button class="btn btn-sm" onclick="modalNeuerBenutzer()">+ Neuer Zugang</button>
+    </div>
+    <div class="card">
+      <table><thead><tr><th>Nutzername</th><th>Rolle</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>
+        ${BENUTZER.map(u => `<tr>
+          <td><strong>${esc(u.nutzername)}</strong>${u.nutzername === ich ? ' <span class="badge badge-gruen" style="font-size:10px">Du</span>' : ""}</td>
+          <td><select onchange="benutzerRolleSetzen('${esc(u.nutzername)}',this.value)" ${u.nutzername === ich ? "disabled" : ""}
+              style="padding:4px 6px;border-radius:6px;border:1px solid var(--border)">
+            ${ROLLEN.map(r => `<option ${u.rolle===r?"selected":""}>${r}</option>`).join("")}
+          </select></td>
+          <td><span class="badge ${u.gesperrt?"badge-grau":"badge-gruen"}">${u.gesperrt?"Gesperrt":"Aktiv"}</span></td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <button class="btn btn-sm btn-secondary" onclick="modalPasswortAendern('${esc(u.nutzername)}')">Passwort ändern</button>
+            ${u.nutzername !== ich ? `
+              <button class="btn btn-sm ${u.gesperrt?"":"btn-ghost"}" style="${u.gesperrt?"":"color:var(--rot);border-color:var(--rot)"}"
+                onclick="benutzerSperren('${esc(u.nutzername)}',${!u.gesperrt})">
+                ${u.gesperrt?"✓ Entsperren":"⊘ Sperren"}
+              </button>
+              <button class="btn btn-sm btn-ghost" style="color:var(--muted)" onclick="benutzerLoeschen('${esc(u.nutzername)}')">✕</button>` : ""}
+          </td>
+        </tr>`).join("")}
+      </tbody></table>
+    </div>`;
+}
+
+function adminTabScore() {
+  const cfg = SCORE_CONFIG;
+  const gesamt = cfg.technik + cfg.taktik + cfg.athletik + cfg.mentalitaet;
+  const ok = gesamt === 100;
+  return `
+    <div class="card mt">
+      <h3>Fortuna-Fit Gewichtung</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">
+        Der Fortuna-Fit-Score berechnet sich als gewichtetes Mittel der vier Bewertungsgruppen.
+        Die Summe aller Gewichte muss genau 100 % ergeben.
+      </p>
+      <div class="form-grid">
+        ${["technik","taktik","athletik","mentalitaet"].map(k => `
+          <div class="field">
+            <label>${RATING_MODELL[k].titel}
+              <strong style="color:var(--rot);margin-left:6px" id="sc-${k}-val">${cfg[k]}%</strong>
+            </label>
+            <input type="range" min="0" max="100" value="${cfg[k]}" id="sc-${k}"
+              oninput="scoreSliderUpdate('${k}',this.value)" style="width:100%">
+          </div>`).join("")}
+      </div>
+      <div style="margin-top:16px;font-size:14px;font-weight:600" id="score-summe">
+        Summe: <span style="color:${ok?"var(--gruen)":"var(--rot)"}">${gesamt}%</span>
+        ${ok?"":"&nbsp;⚠️ muss 100 ergeben"}
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted)" id="score-formel">
+        Formel: ${["technik","taktik","athletik","mentalitaet"].map(k=>`${cfg[k]}% × ${RATING_MODELL[k].titel}`).join(" + ")}
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted)">
+        Standardwerte: Technik 10% · Taktik 25% · Athletik 20% · Mentalität 45%
+      </div>
+      <div class="modal-actions" style="margin-top:20px">
+        <button class="btn btn-secondary" onclick="scoreZuruecksetzen()">Standard wiederherstellen</button>
+        <button class="btn" id="score-speichern-btn" onclick="scoreSpeichern()" ${ok?"":"disabled"}>✓ Speichern &amp; anwenden</button>
+      </div>
+    </div>`;
+}
+
+function benutzerRolleSetzen(nutzername, rolle) {
+  const u = BENUTZER.find(b => b.nutzername === nutzername);
+  if (u) { u.rolle = rolle; speichereBenutzer(); toast(`Rolle für ${nutzername} auf „${rolle}" geändert.`); }
+}
+window.benutzerRolleSetzen = benutzerRolleSetzen;
+
+function benutzerSperren(nutzername, sperren) {
+  const u = BENUTZER.find(b => b.nutzername === nutzername);
+  if (u) { u.gesperrt = sperren; speichereBenutzer(); renderAdminTab(); toast(`${nutzername} wurde ${sperren?"gesperrt":"entsperrt"}.`); }
+}
+window.benutzerSperren = benutzerSperren;
+
+function benutzerLoeschen(nutzername) {
+  const root = $("#modal-root");
+  root.innerHTML = `<div class="modal-backdrop"><div class="modal">
+    <h2>Zugang löschen</h2>
+    <p style="margin:16px 0">Soll der Zugang <strong>${esc(nutzername)}</strong> dauerhaft gelöscht werden?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+      <button class="btn" style="background:var(--rot);border-color:var(--rot)" onclick="benutzerLoeschenBestaetigt('${esc(nutzername)}')">Löschen</button>
+    </div>
+  </div></div>`;
+  $(".modal-backdrop").addEventListener("click", e => { if (e.target.classList.contains("modal-backdrop")) schliesseModal(); });
+}
+window.benutzerLoeschen = benutzerLoeschen;
+
+function benutzerLoeschenBestaetigt(nutzername) {
+  BENUTZER = BENUTZER.filter(b => b.nutzername !== nutzername);
+  speichereBenutzer();
+  schliesseModal();
+  renderAdminTab();
+  toast(`Zugang „${nutzername}" wurde gelöscht.`);
+}
+window.benutzerLoeschenBestaetigt = benutzerLoeschenBestaetigt;
+
+function modalPasswortAendern(nutzername) {
+  zeigeModal(`
+    <h2>Passwort ändern – ${esc(nutzername)}</h2>
+    <form id="modal-form">
+      <div class="form-grid">
+        ${feld("Neues Passwort *", "passwort", "password", 'required minlength="6" placeholder="Mind. 6 Zeichen"')}
+        ${feld("Wiederholen *", "passwort2", "password", 'required minlength="6"')}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+        <button type="submit" class="btn">Speichern</button>
+      </div>
+    </form>`, fd => {
+    const pw = fd.get("passwort"), pw2 = fd.get("passwort2");
+    if (pw !== pw2) { toast("Passwörter stimmen nicht überein."); return; }
+    const u = BENUTZER.find(b => b.nutzername === nutzername);
+    if (u) { u.passwort = pw; speichereBenutzer(); schliesseModal(); toast(`Passwort für „${nutzername}" geändert.`); }
+  });
+}
+window.modalPasswortAendern = modalPasswortAendern;
+
+function modalNeuerBenutzer() {
+  zeigeModal(`
+    <h2>Neuen Zugang anlegen</h2>
+    <form id="modal-form">
+      <div class="form-grid">
+        ${feld("Nutzername *", "nutzername", "text", "required")}
+        ${feld("Passwort *", "passwort", "password", 'required minlength="6" placeholder="Mind. 6 Zeichen"')}
+        ${feld("Rolle *", "rolle", "text", "required", ROLLEN)}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+        <button type="submit" class="btn">Anlegen</button>
+      </div>
+    </form>`, fd => {
+    const nutzername = (fd.get("nutzername") || "").trim().toLowerCase();
+    if (!nutzername) { toast("Nutzername darf nicht leer sein."); return; }
+    if (BENUTZER.find(b => b.nutzername === nutzername)) { toast("Nutzername bereits vergeben."); return; }
+    BENUTZER.push({ nutzername, passwort: fd.get("passwort"), rolle: fd.get("rolle"), gesperrt: false });
+    speichereBenutzer();
+    schliesseModal();
+    renderAdminTab();
+    toast(`Zugang „${nutzername}" wurde angelegt.`);
+  });
+}
+window.modalNeuerBenutzer = modalNeuerBenutzer;
+
+function scoreSliderUpdate(key, value) {
+  SCORE_CONFIG[key] = +value;
+  const valEl = document.getElementById(`sc-${key}-val`);
+  if (valEl) valEl.textContent = value + "%";
+  const gesamt = ["technik","taktik","athletik","mentalitaet"].reduce((s,k) => s + SCORE_CONFIG[k], 0);
+  const ok = gesamt === 100;
+  const sumEl = document.getElementById("score-summe");
+  if (sumEl) sumEl.innerHTML = `Summe: <span style="color:${ok?"var(--gruen)":"var(--rot)"}">${gesamt}%</span>${ok?"":" &nbsp;⚠️ muss 100 ergeben"}`;
+  const formelEl = document.getElementById("score-formel");
+  if (formelEl) formelEl.textContent = "Formel: " + ["technik","taktik","athletik","mentalitaet"].map(k=>`${SCORE_CONFIG[k]}% × ${RATING_MODELL[k].titel}`).join(" + ");
+  const btn = document.getElementById("score-speichern-btn");
+  if (btn) btn.disabled = !ok;
+}
+window.scoreSliderUpdate = scoreSliderUpdate;
+
+function scoreSpeichern() {
+  speichereScoreConfig();
+  toast("Fortuna-Score-Gewichtung gespeichert – alle Scores werden neu berechnet.");
+  renderAdminTab();
+}
+window.scoreSpeichern = scoreSpeichern;
+
+function scoreZuruecksetzen() {
+  SCORE_CONFIG = { ...DEFAULT_SCORE_CONFIG };
+  speichereScoreConfig();
+  renderAdminTab();
+  toast("Fortuna-Score auf Standardwerte zurückgesetzt.");
+}
+window.scoreZuruecksetzen = scoreZuruecksetzen;
 
 // ---------- Spieler löschen ----------
 function spielerLoeschen(id) {
