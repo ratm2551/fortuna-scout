@@ -260,6 +260,40 @@ function updateNav() {
   }
 }
 
+// ---------- Setup-Link (Zugangsdaten per URL verteilen) ----------
+(function setupImport() {
+  const hash = location.hash || "";
+  if (!hash.startsWith("#setup=")) return;
+  try {
+    const payload = JSON.parse(atob(hash.slice(7)));
+    if (Array.isArray(payload.users) && payload.users.length) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(payload.users));
+      BENUTZER = payload.users;
+      history.replaceState(null, "", location.pathname + "#/dashboard");
+      toast("✅ Zugangsdaten wurden eingerichtet. Bitte jetzt anmelden.");
+    }
+  } catch (e) {}
+})();
+
+function setupLinkErstellen() {
+  const payload = btoa(JSON.stringify({ users: BENUTZER, version: 1 }));
+  const url = location.origin + location.pathname + "#setup=" + payload;
+  navigator.clipboard.writeText(url).then(function() {
+    toast("Setup-Link in Zwischenablage kopiert! Diesen Link an neue Nutzer senden.");
+  }).catch(function() {
+    const root = document.getElementById("modal-root");
+    root.innerHTML = `<div class="modal-backdrop"><div class="modal" style="max-width:520px">
+      <h3>Setup-Link</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Diesen Link an neue Nutzer senden. Beim Öffnen werden alle Zugangsdaten automatisch eingerichtet.</p>
+      <textarea readonly onclick="this.select()" style="width:100%;font-size:11px;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);min-height:80px;resize:none;word-break:break-all">${esc(url)}</textarea>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button class="btn" onclick="document.getElementById('modal-root').innerHTML=''">Schließen</button>
+      </div>
+    </div></div>`;
+  });
+}
+window.setupLinkErstellen = setupLinkErstellen;
+
 // ---------- Routing ----------
 function route() {
   if (!aktuellerNutzer()) { viewLogin(); return; }
@@ -1542,9 +1576,15 @@ window.renderAdminTab = renderAdminTab;
 function adminTabBenutzer() {
   const ich = aktuellerNutzer()?.nutzername;
   return `
-    <div class="flex-between mb" style="margin-top:16px">
+    <div class="warnung" style="margin-top:16px">
+      <strong>Neue Nutzer einrichten:</strong> Erstelle zunächst die Zugänge, dann klicke <em>Setup-Link erstellen</em> und sende den Link an die Person. Beim ersten Öffnen werden die Zugangsdaten automatisch in deren Browser geladen.
+    </div>
+    <div class="flex-between mb">
       <h3 style="margin:0">Zugänge (${BENUTZER.length})</h3>
-      <button class="btn btn-sm" onclick="modalNeuerBenutzer()">+ Neuer Zugang</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm btn-secondary" onclick="setupLinkErstellen()">🔗 Setup-Link erstellen</button>
+        <button class="btn btn-sm" onclick="modalNeuerBenutzer()">+ Neuer Zugang</button>
+      </div>
     </div>
     <div class="card">
       <table><thead><tr><th>Nutzername</th><th>Rolle</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>
