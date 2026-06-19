@@ -289,6 +289,23 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 
+// ---------- Mobile sidebar toggle ----------
+(function() {
+  const toggle = document.getElementById("menuToggle");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  if (!toggle || !sidebar || !overlay) return;
+  function openNav() { sidebar.classList.add("nav-open"); overlay.classList.add("nav-open"); }
+  function closeNav() { sidebar.classList.remove("nav-open"); overlay.classList.remove("nav-open"); }
+  toggle.addEventListener("click", function() {
+    sidebar.classList.contains("nav-open") ? closeNav() : openNav();
+  });
+  overlay.addEventListener("click", closeNav);
+  document.querySelectorAll("#nav a").forEach(function(a) {
+    a.addEventListener("click", function() { if (window.innerWidth <= 768) closeNav(); });
+  });
+})();
+
 // ---------- Dashboard ----------
 function viewDashboard() {
   const neue30 = SPIELER.filter(p => (HEUTE - new Date(p.erstelltAm)) / 86400000 <= 30).length;

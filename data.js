@@ -170,9 +170,11 @@ const STORAGE_KEY = "fortuna-scout-data-v1";
 function ladeSpieler() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) { /* defekte Daten → Demodaten */ }
-  return JSON.parse(JSON.stringify(DEMO_SPIELER));
+    if (raw !== null) return JSON.parse(raw) || [];
+  } catch (e) {}
+  // Erstes Öffnen: leere Datenbank (keine Demo-Daten)
+  localStorage.setItem(STORAGE_KEY, "[]");
+  return [];
 }
 
 function speichereSpieler(spieler) {
@@ -180,5 +182,5 @@ function speichereSpieler(spieler) {
 }
 
 function resetDemodaten() {
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(JSON.parse(JSON.stringify(DEMO_SPIELER))));
 }
