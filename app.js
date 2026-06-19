@@ -527,23 +527,26 @@ function tabProfil(p) {
     <div style="font-size:12px;color:var(--muted);margin-top:10px">Echtes StatsBomb-xG-Modell aus Schussdaten · Tore: ${p.sbRef.tore} · Assists: ${p.sbRef.assists} · Einsätze im Datensatz: ${p.sbRef.einsaetze}</div>
   </div>` : ""}
   <div class="card mt"><h3>🤖 KI-Kurzprofil (Prototyp)</h3><p style="font-size:13.5px;line-height:1.6">${kiKurzprofil(p)}</p></div>
-  ${hatRecht("spieler_bearbeiten") ? `
-  <div class="card mt">
-    <h3>📊 Statistiken <span style="font-size:12px;font-weight:400;color:var(--muted)">(manuell erfasst · werden durch StatsBomb-Daten ergänzt)</span></h3>
-    <div class="form-grid">
-      ${STAT_KRITERIEN.map(kr => {
-        const v = (p.statistiken || {})[kr.feld];
-        const sbVal = kr.feld === "xg" ? p.sbRef?.xg : kr.feld === "xa" ? p.sbRef?.xa : kr.feld === "tore" ? p.sbRef?.tore : kr.feld === "vorlagen" ? p.sbRef?.assists : null;
-        return `<div class="field">
-          <label>${kr.label} (${kr.einheit})${sbVal != null ? ` <span style="color:var(--gruen);font-size:11px">StatsBomb: ${sbVal}</span>` : ""}</label>
-          <input type="number" min="0" step="any" value="${v ?? ""}" placeholder="–"
-            oninput="setStatFeld('${p.id}','${kr.feld}',this.value)"
-            style="border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--bg-card);color:var(--text)">
-        </div>`;
-      }).join("")}
-    </div>
-    <div style="font-size:12px;color:var(--muted);margin-top:8px">Änderungen werden beim Verlassen des Feldes gespeichert. StatsBomb-Werte haben im Score-Modell Vorrang.</div>
-  </div>` : ""}`;
+  ${hatRecht("spieler_bearbeiten") ? renderStatistikFelder(p) : ""}`;
+}
+function renderStatistikFelder(p) {
+  const felder = STAT_KRITERIEN.map(function(kr) {
+    const v = (p.statistiken || {})[kr.feld];
+    const sbRef = p.sbRef || {};
+    const sbVal = kr.feld === "xg" ? sbRef.xg : kr.feld === "xa" ? sbRef.xa : kr.feld === "tore" ? sbRef.tore : kr.feld === "vorlagen" ? sbRef.assists : null;
+    const sbHinweis = sbVal != null ? ' <span style="color:var(--gruen);font-size:11px">StatsBomb: ' + sbVal + "</span>" : "";
+    return '<div class="field">'
+      + "<label>" + esc(kr.label) + " (" + esc(kr.einheit) + ")" + sbHinweis + "</label>"
+      + '<input type="number" min="0" step="any" value="' + (v != null ? v : "") + '" placeholder="–"'
+      + ' oninput="setStatFeld(\'' + p.id + '\',\'' + kr.feld + '\',this.value)"'
+      + ' style="border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--bg-card);color:var(--text)">'
+      + "</div>";
+  }).join("");
+  return '<div class="card mt">'
+    + '<h3>📊 Statistiken <span style="font-size:12px;font-weight:400;color:var(--muted)">(manuell erfasst · werden durch StatsBomb-Daten ergänzt)</span></h3>'
+    + '<div class="form-grid">' + felder + "</div>"
+    + '<div style="font-size:12px;color:var(--muted);margin-top:8px">Änderungen werden gespeichert. StatsBomb-Werte haben im Score-Modell Vorrang.</div>'
+    + "</div>";
 }
 function setFeld(id, feld, wert) { findSpieler(id)[feld] = wert; speichern(); }
 window.setFeld = setFeld;
