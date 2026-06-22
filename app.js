@@ -2058,7 +2058,19 @@ function zeigeLadeOverlay(sichtbar) {
 function startApp() {
   const hatFirebase = initFirebase(
     function(liste) {        // Erste Daten angekommen
-      SPIELER = liste;
+      if (liste.length === 0) {
+        // Firebase ist leer → lokale Spieler einmalig hochladen (Migration)
+        const lokal = ladeSpieler();
+        if (lokal.length > 0) {
+          SPIELER = lokal;
+          speichereFirebase(SPIELER);
+          toast("✅ " + lokal.length + " lokale Spieler in die Cloud-Datenbank übertragen.");
+        } else {
+          SPIELER = [];
+        }
+      } else {
+        SPIELER = liste;
+      }
       zeigeLadeOverlay(false);
       route();
     },
