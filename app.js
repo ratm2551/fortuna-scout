@@ -1876,6 +1876,7 @@ function spielerLoeschenBestaetigt(id) {
   const name = p ? `${p.vorname} ${p.nachname}` : "Spieler";
   SPIELER = SPIELER.filter(s => s.id !== id);
   speichern();
+  loescheFirebaseEintrag(id);
   schliesseModal();
   toast(`${name} wurde aus der Datenbank gelöscht.`);
   if (location.hash.startsWith("#/spieler/")) {

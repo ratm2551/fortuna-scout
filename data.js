@@ -241,7 +241,15 @@ function speichereFirebase(spieler) {
   _fbSuppressUpdate = true;
   var obj = {};
   spieler.forEach(function(p) { obj[p.id] = p; });
-  _fbDb.ref('spieler').set(obj)
+  // update() statt set(): merged nur geänderte Spieler, überschreibt nicht
+  // Einträge anderer Geräte die wir lokal nicht haben
+  _fbDb.ref('spieler').update(obj)
     .then(function() { setTimeout(function() { _fbSuppressUpdate = false; }, 1500); })
     .catch(function(e) { _fbSuppressUpdate = false; console.error('Firebase Schreibfehler:', e); });
+}
+
+function loescheFirebaseEintrag(id) {
+  if (!_fbDb || !id) return;
+  _fbDb.ref('spieler/' + id).remove()
+    .catch(function(e) { console.error('Firebase Lösch-Fehler:', e); });
 }
