@@ -191,7 +191,7 @@ var _fbDb = null;
 var _fbSuppressUpdate = false;
 
 function initFirebase(onFirstData, onRemoteUpdate) {
-  if (!window.FIREBASE_CONFIG) return false;
+  if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG) return false;
   try {
     if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
     _fbDb = firebase.database();
