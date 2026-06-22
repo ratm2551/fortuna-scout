@@ -297,6 +297,8 @@ window.setupLinkErstellen = setupLinkErstellen;
 // ---------- Routing ----------
 function route() {
   if (!aktuellerNutzer()) { viewLogin(); return; }
+  const layout = document.querySelector(".layout");
+  if (layout) layout.style.display = "";
   const hash = location.hash.replace(/^#\//, "") || "dashboard";
   const [seite, param] = hash.split("/");
   updateNav();
