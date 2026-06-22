@@ -190,16 +190,30 @@ function resetDemodaten() {
 var _fbDb = null;
 var _fbSuppressUpdate = false;
 
+function fbStatusAnzeigen(text, farbe) {
+  var el = document.getElementById('fb-status');
+  if (el) { el.textContent = text; el.style.color = farbe || '#9ca3af'; }
+}
+
 function initFirebase(onFirstData, onRemoteUpdate) {
-  if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG) return false;
+  if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG) {
+    fbStatusAnzeigen('💾 Lokaler Modus', '#9ca3af');
+    return false;
+  }
   try {
-    if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+    if (typeof firebase === 'undefined') {
+      fbStatusAnzeigen('❌ Firebase SDK fehlt', '#f87171');
+      return false;
+    }
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     _fbDb = firebase.database();
+    fbStatusAnzeigen('⏳ Verbinde...', '#fbbf24');
     var firstLoad = true;
     _fbDb.ref('spieler').on('value', function(snapshot) {
       var data = snapshot.val();
       var liste = data ? Object.values(data) : [];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(liste));
+      fbStatusAnzeigen('🟢 Online · ' + liste.length + ' Spieler', '#4ade80');
       if (firstLoad) {
         firstLoad = false;
         onFirstData(liste);
@@ -208,6 +222,7 @@ function initFirebase(onFirstData, onRemoteUpdate) {
       }
     }, function(error) {
       console.error('Firebase Verbindungsfehler:', error);
+      fbStatusAnzeigen('❌ ' + (error.code || 'Verbindungsfehler'), '#f87171');
       if (firstLoad) {
         firstLoad = false;
         onFirstData(ladeSpieler());
@@ -216,6 +231,7 @@ function initFirebase(onFirstData, onRemoteUpdate) {
     return true;
   } catch (e) {
     console.error('Firebase Init fehlgeschlagen:', e);
+    fbStatusAnzeigen('❌ Init-Fehler: ' + e.message, '#f87171');
     return false;
   }
 }
