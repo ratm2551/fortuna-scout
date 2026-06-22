@@ -1,14 +1,17 @@
 // Fortuna Talent Scout Dashboard – Prototyp-Logik
 "use strict";
 
-let SPIELER = ladeSpieler();
+let SPIELER = [];
 const HEUTE = new Date();
 
 // ---------- Helfer ----------
 const $ = (sel, root = document) => root.querySelector(sel);
 const main = $("#main");
 
-function speichern() { speichereSpieler(SPIELER); }
+function speichern() {
+  speichereSpieler(SPIELER);
+  speichereFirebase(SPIELER);
+}
 function findSpieler(id) { return SPIELER.find(p => p.id === id); }
 function jahrgang(p) { return p.geburtsdatum ? p.geburtsdatum.slice(0, 4) : "–"; }
 function alter(p) {
@@ -2038,6 +2041,41 @@ function csvImportBestaetigen() {
 }
 window.csvImportBestaetigen = csvImportBestaetigen;
 
+// ---------- Lade-Overlay ----------
+function zeigeLadeOverlay(sichtbar) {
+  let el = document.getElementById("lade-overlay");
+  if (!el && sichtbar) {
+    el = document.createElement("div");
+    el.id = "lade-overlay";
+    el.style.cssText = "position:fixed;inset:0;background:#13151a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px";
+    el.innerHTML = '<div style="font-size:40px">⚽</div><div style="color:#fff;font-size:14px;font-weight:600">Verbindung zur Datenbank…</div><div style="color:#9ca3af;font-size:12px">Bitte kurz warten</div>';
+    document.body.appendChild(el);
+  }
+  if (el) el.style.display = sichtbar ? "flex" : "none";
+}
+
+// ---------- App-Start ----------
+function startApp() {
+  const hatFirebase = initFirebase(
+    function(liste) {        // Erste Daten angekommen
+      SPIELER = liste;
+      zeigeLadeOverlay(false);
+      route();
+    },
+    function(liste) {        // Remote-Änderung durch anderen Nutzer
+      SPIELER = liste;
+      route();
+    }
+  );
+  if (!hatFirebase) {
+    // Kein Firebase konfiguriert – localStorage-Modus
+    SPIELER = ladeSpieler();
+    route();
+  } else {
+    zeigeLadeOverlay(true);
+  }
+}
+
 // ---------- Init ----------
 $("#resetData").addEventListener("click", () => {
   const root = $("#modal-root");
@@ -2046,9 +2084,9 @@ $("#resetData").addEventListener("click", () => {
     <p style="margin:16px 0">Alle Änderungen werden verworfen und die ursprünglichen Demodaten neu geladen.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
-      <button class="btn" onclick="schliesseModal();resetDemodaten();SPIELER=ladeSpieler();route()">Zurücksetzen</button>
+      <button class="btn" onclick="schliesseModal();resetDemodaten();SPIELER=ladeSpieler();speichern();route()">Zurücksetzen</button>
     </div>
   </div></div>`;
   $(".modal-backdrop").addEventListener("click", e => { if (e.target.classList.contains("modal-backdrop")) schliesseModal(); });
 });
-route();
+startApp();

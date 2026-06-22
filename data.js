@@ -172,7 +172,6 @@ function ladeSpieler() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw !== null) return JSON.parse(raw) || [];
   } catch (e) {}
-  // Erstes Öffnen: leere Datenbank (keine Demo-Daten)
   localStorage.setItem(STORAGE_KEY, "[]");
   return [];
 }
@@ -182,5 +181,51 @@ function speichereSpieler(spieler) {
 }
 
 function resetDemodaten() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(JSON.parse(JSON.stringify(DEMO_SPIELER))));
+  const kopie = JSON.parse(JSON.stringify(DEMO_SPIELER));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(kopie));
+  speichereFirebase(kopie);
+}
+
+// ── Firebase Realtime Database ──────────────────────────────────────────────
+var _fbDb = null;
+var _fbSuppressUpdate = false;
+
+function initFirebase(onFirstData, onRemoteUpdate) {
+  if (!window.FIREBASE_CONFIG) return false;
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+    _fbDb = firebase.database();
+    var firstLoad = true;
+    _fbDb.ref('spieler').on('value', function(snapshot) {
+      var data = snapshot.val();
+      var liste = data ? Object.values(data) : [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(liste));
+      if (firstLoad) {
+        firstLoad = false;
+        onFirstData(liste);
+      } else if (!_fbSuppressUpdate) {
+        onRemoteUpdate(liste);
+      }
+    }, function(error) {
+      console.error('Firebase Verbindungsfehler:', error);
+      if (firstLoad) {
+        firstLoad = false;
+        onFirstData(ladeSpieler());
+      }
+    });
+    return true;
+  } catch (e) {
+    console.error('Firebase Init fehlgeschlagen:', e);
+    return false;
+  }
+}
+
+function speichereFirebase(spieler) {
+  if (!_fbDb || !spieler) return;
+  _fbSuppressUpdate = true;
+  var obj = {};
+  spieler.forEach(function(p) { obj[p.id] = p; });
+  _fbDb.ref('spieler').set(obj)
+    .then(function() { setTimeout(function() { _fbSuppressUpdate = false; }, 1500); })
+    .catch(function(e) { _fbSuppressUpdate = false; console.error('Firebase Schreibfehler:', e); });
 }
