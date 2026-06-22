@@ -1,20 +1,10 @@
-// Firebase-Konfiguration – einmalig ausfüllen
-// Anleitung:
-//   1. https://console.firebase.google.com → Neues Projekt erstellen (z.B. "fortuna-scout")
-//   2. Links: "Realtime Database" → Datenbank erstellen → Region: europe-west1 → Testmodus
-//   3. Projekteinstellungen (Zahnrad) → "Deine Apps" → Web-App (</>)  → App registrieren
-//   4. Den "firebaseConfig"-Block unten einfügen (const FIREBASE_CONFIG = { ... })
-
-const FIREBASE_CONFIG = null; // <-- Zeile ersetzen sobald du die Daten hast
-
-/* Beispiel – NICHT als Variable null lassen:
 const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSy...",
-  authDomain:        "fortuna-scout-xxxx.firebaseapp.com",
-  databaseURL:       "https://fortuna-scout-xxxx-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:         "fortuna-scout-xxxx",
-  storageBucket:     "fortuna-scout-xxxx.appspot.com",
-  messagingSenderId: "123456789",
-  appId:             "1:123456789:web:abcdef"
+  apiKey:            "AIzaSyAKrFCFT_ldcRybPwxaCr6oLwceaDWflNI",
+  authDomain:        "f95-fussballschule-scout.firebaseapp.com",
+  databaseURL:       "https://f95-fussballschule-scout-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "f95-fussballschule-scout",
+  storageBucket:     "f95-fussballschule-scout.firebasestorage.app",
+  messagingSenderId: "673926376011",
+  appId:             "1:673926376011:web:f4cbcb93a033ca9ac57bce",
+  measurementId:     "G-QNLY7RMND9"
 };
-*/
