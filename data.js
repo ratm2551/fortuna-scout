@@ -190,6 +190,23 @@ function resetDemodaten() {
 var _fbDb = null;
 var _fbSuppressUpdate = false;
 
+function toArray(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  return Object.values(v);
+}
+
+function normalisiereSpieler(p) {
+  p.videos      = toArray(p.videos);
+  p.berichte    = toArray(p.berichte);
+  p.entwicklung = toArray(p.entwicklung);
+  p.nebenpositionen = toArray(p.nebenpositionen);
+  if (!p.ratings)     p.ratings     = leereRatings();
+  if (!p.statistiken) p.statistiken = {};
+  if (!p.notizen)     p.notizen     = "";
+  return p;
+}
+
 function fbStatusAnzeigen(text, farbe) {
   var el = document.getElementById('fb-status');
   if (el) { el.textContent = text; el.style.color = farbe || '#9ca3af'; }
@@ -211,7 +228,7 @@ function initFirebase(onFirstData, onRemoteUpdate) {
     var firstLoad = true;
     _fbDb.ref('spieler').on('value', function(snapshot) {
       var data = snapshot.val();
-      var liste = data ? Object.values(data) : [];
+      var liste = data ? Object.values(data).map(normalisiereSpieler) : [];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(liste));
       fbStatusAnzeigen('🟢 Online · ' + liste.length + ' Spieler', '#4ade80');
       if (firstLoad) {
