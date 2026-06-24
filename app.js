@@ -1955,7 +1955,13 @@ function csvVerarbeitenUndPreview(text) {
     "Vorname": "vorname", "Nachname": "nachname", "Position": "hauptposition",
     "Verein": "verein", "Liga": "liga", "Pool": "pool",
     "Nationalität": "nationalitaet", "Nationalitaet": "nationalitaet", "Jahrgang": "jahrgang",
-    "Marktwert (EUR)": "marktwert", "Vertragsende": "vertragsende",
+    "Geburtsdatum": "geburtsdatum", "Geburt": "geburtsdatum", "Geb.datum": "geburtsdatum",
+    "Marktwert (EUR)": "marktwert", "Marktwert": "marktwert",
+    "Vertragsende": "vertragsende", "Vertrag": "vertragsende",
+    "Kommentar": "notizen", "Notizen": "notizen", "Anmerkungen": "notizen", "Besonderheiten": "notizen",
+    "Größe": "groesse", "Groesse": "groesse",
+    "Gewicht": "gewicht",
+    "Starker Fuß": "starkerFuss", "Starker Fuss": "starkerFuss",
     "xG": "_xg", "xA": "_xa", "Tore": "_tore", "Assists": "_vorlagen",
     "Laufleistung": "_lauf", "Karrierespiele": "_karriere",
   };
@@ -2007,7 +2013,7 @@ function csvImportBestaetigen() {
       p.nachname.toLowerCase() === k.nachname.toLowerCase()
     );
     if (exists) continue;
-    const geb = k.jahrgang && /^\d{4}$/.test(k.jahrgang) ? k.jahrgang + "-07-01" : "";
+    const geb = k.geburtsdatum ? k.geburtsdatum : (k.jahrgang && /^\d{4}$/.test(k.jahrgang) ? k.jahrgang + "-07-01" : "");
     const stats = {};
     if (k._xg)       stats.xg       = +k._xg;
     if (k._xa)       stats.xa       = +k._xa;
@@ -2020,7 +2026,8 @@ function csvImportBestaetigen() {
       vorname: k.vorname, nachname: k.nachname,
       geburtsdatum: geb, nationalitaet: k.nationalitaet || "Deutschland",
       verein: k.verein || "", liga: k.liga || "", verband: "",
-      groesse: 0, gewicht: 0, starkerFuss: "Rechts", schwacherFuss: 3,
+      groesse: k.groesse ? +k.groesse : 0, gewicht: k.gewicht ? +k.gewicht : 0,
+      starkerFuss: k.starkerFuss || "Rechts", schwacherFuss: 3,
       hauptposition: k.hauptposition || "Mittelfeld (Zentral)",
       nebenpositionen: [],
       vertragsstatus: "", vertragsende: k.vertragsende || "",
@@ -2030,7 +2037,7 @@ function csvImportBestaetigen() {
       trialStatus: "Keine", trialUrteil: "",
       erstelltAm: HEUTE.toISOString().slice(0, 10),
       ratings: leereRatings(), videos: [], berichte: [], entwicklung: [],
-      notizen: "", statistiken: stats,
+      notizen: k.notizen || "", statistiken: stats,
     });
     neu++;
   }
