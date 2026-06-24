@@ -2015,6 +2015,20 @@ function csvZeilenParsern(text) {
   });
 }
 
+function parsiereDatum(str) {
+  if (!str || typeof str !== "string") return "";
+  str = str.trim();
+  // ISO-Format YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  // Deutsches Format DD.MM.YYYY oder DD/MM/YYYY
+  const match = str.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/);
+  if (match) {
+    const [, day, month, year] = match;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  return "";
+}
+
 function csvVerarbeitenUndPreview(text) {
   const zeilen = csvZeilenParsern(text);
   if (zeilen.length < 2) { toast("CSV enthält keine Daten."); return; }
@@ -2027,8 +2041,9 @@ function csvVerarbeitenUndPreview(text) {
     "E-Mail": "kontakt", "Email": "kontakt", "E-Mail-Adresse": "kontakt",
     "Marktwert (EUR)": "marktwert", "Marktwert": "marktwert",
     "Vertragsende": "vertragsende", "Vertrag": "vertragsende",
-    "Kommentar": "notizen", "Notizen": "notizen", "Anmerkungen": "notizen", "Besonderheiten": "notizen", "Talent-Kommentar": "notizen",
-    "Talent": "_talent",
+    "Kommentar": "notizen", "Notizen": "notizen", "Anmerkungen": "notizen", "Besonderheiten": "notizen",
+    "Talent-Kommentar": "notizen", "Talent Kommentar": "notizen", "Talent Beobachtung": "notizen", "Beobachtung": "notizen",
+    "Talent": "_talent", "Talent-Kategorie": "_talent", "Talent Kategorie": "_talent",
     "Größe": "groesse", "Groesse": "groesse",
     "Gewicht": "gewicht",
     "Starker Fuß": "starkerFuss", "Starker Fuss": "starkerFuss",
@@ -2083,7 +2098,7 @@ function csvImportBestaetigen() {
       p.nachname.toLowerCase() === k.nachname.toLowerCase()
     );
     if (exists) continue;
-    const geb = k.geburtsdatum ? k.geburtsdatum : (k.jahrgang && /^\d{4}$/.test(k.jahrgang) ? k.jahrgang + "-07-01" : "");
+    const geb = k.geburtsdatum ? parsiereDatum(k.geburtsdatum) : (k.jahrgang && /^\d{4}$/.test(k.jahrgang) ? k.jahrgang + "-07-01" : "");
     const stats = {};
     if (k._xg)       stats.xg       = +k._xg;
     if (k._xa)       stats.xa       = +k._xa;
