@@ -2037,20 +2037,29 @@ function csvVerarbeitenUndPreview(text) {
     "Vorname": "vorname", "Nachname": "nachname", "Position": "hauptposition", "Torhüter/in": "hauptposition",
     "Verein": "verein", "Heimatverein": "verein", "Liga": "liga", "Pool": "pool",
     "Nationalität": "nationalitaet", "Nationalitaet": "nationalitaet", "Jahrgang": "jahrgang",
-    "Geburtsdatum": "geburtsdatum", "Geburtstag": "geburtsdatum", "Geburt": "geburtsdatum", "Geb.datum": "geburtsdatum",
+    "Geburtsdatum": "geburtsdatum", "Geburtstag": "geburtsdatum", "Geburt": "geburtsdatum", "Geb.datum": "geburtsdatum", "Geb": "geburtsdatum",
     "E-Mail": "kontakt", "Email": "kontakt", "E-Mail-Adresse": "kontakt",
     "Marktwert (EUR)": "marktwert", "Marktwert": "marktwert",
     "Vertragsende": "vertragsende", "Vertrag": "vertragsende",
     "Kommentar": "notizen", "Notizen": "notizen", "Anmerkungen": "notizen", "Besonderheiten": "notizen",
-    "Talent-Kommentar": "notizen", "Talent Kommentar": "notizen", "Talent Beobachtung": "notizen", "Beobachtung": "notizen",
-    "Talent": "_talent", "Talent-Kategorie": "_talent", "Talent Kategorie": "_talent",
-    "Größe": "groesse", "Groesse": "groesse",
+    "Talent-Kommentar": "notizen", "Talent Kommentar": "notizen", "Talent Beobachtung": "notizen", "Talent-Beobachtung": "notizen", "Beobachtung": "notizen",
+    "Talent": "_talent", "Talent-Kategorie": "_talent", "Talent Kategorie": "_talent", "Talentbewertung": "_talent",
+    "Größe": "groesse", "Groesse": "groesse", "Groeße": "groesse",
     "Gewicht": "gewicht",
     "Starker Fuß": "starkerFuss", "Starker Fuss": "starkerFuss",
     "xG": "_xg", "xA": "_xa", "Tore": "_tore", "Assists": "_vorlagen",
     "Laufleistung": "_lauf", "Karrierespiele": "_karriere",
   };
-  const cols = kopf.map(h => COL_MAP[h] || null);
+  // Case-insensitive Matching
+  const cols = kopf.map(h => {
+    const direktMatch = COL_MAP[h];
+    if (direktMatch) return direktMatch;
+    const lower = h.toLowerCase();
+    for (const [key, val] of Object.entries(COL_MAP)) {
+      if (key.toLowerCase() === lower) return val;
+    }
+    return null;
+  });
   if (!cols.includes("vorname") || !cols.includes("nachname")) {
     toast('CSV: Pflichtfelder "Vorname" und "Nachname" nicht gefunden. Bitte Format prüfen.'); return;
   }
