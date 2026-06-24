@@ -1952,13 +1952,15 @@ function csvVerarbeitenUndPreview(text) {
   if (zeilen.length < 2) { toast("CSV enthält keine Daten."); return; }
   const kopf = zeilen[0].map(h => h.trim());
   const COL_MAP = {
-    "Vorname": "vorname", "Nachname": "nachname", "Position": "hauptposition",
-    "Verein": "verein", "Liga": "liga", "Pool": "pool",
+    "Vorname": "vorname", "Nachname": "nachname", "Position": "hauptposition", "Torhüter/in": "hauptposition",
+    "Verein": "verein", "Heimatverein": "verein", "Liga": "liga", "Pool": "pool",
     "Nationalität": "nationalitaet", "Nationalitaet": "nationalitaet", "Jahrgang": "jahrgang",
-    "Geburtsdatum": "geburtsdatum", "Geburt": "geburtsdatum", "Geb.datum": "geburtsdatum",
+    "Geburtsdatum": "geburtsdatum", "Geburtstag": "geburtsdatum", "Geburt": "geburtsdatum", "Geb.datum": "geburtsdatum",
+    "E-Mail": "kontakt", "Email": "kontakt", "E-Mail-Adresse": "kontakt",
     "Marktwert (EUR)": "marktwert", "Marktwert": "marktwert",
     "Vertragsende": "vertragsende", "Vertrag": "vertragsende",
-    "Kommentar": "notizen", "Notizen": "notizen", "Anmerkungen": "notizen", "Besonderheiten": "notizen",
+    "Kommentar": "notizen", "Notizen": "notizen", "Anmerkungen": "notizen", "Besonderheiten": "notizen", "Talent-Kommentar": "notizen",
+    "Talent": "_talent",
     "Größe": "groesse", "Groesse": "groesse",
     "Gewicht": "gewicht",
     "Starker Fuß": "starkerFuss", "Starker Fuss": "starkerFuss",
