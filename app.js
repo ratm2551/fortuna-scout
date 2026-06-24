@@ -1946,171 +1946,37 @@ function feedbackExportieren(id) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Feedback ${esc(p.vorname)} ${esc(p.nachname)}</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { font-family: 'Arial', sans-serif; color: #333; background: #fff; }
-    @page { size: A4; margin: 0; }
-    @media print { body { margin: 0; padding: 0; } }
-    .page {
-      width: 21cm;
-      height: 29.7cm;
-      margin: 0 auto;
-      background: white;
-      display: grid;
-      grid-template-columns: 4.5cm 1fr;
-      grid-template-rows: auto 1fr auto;
-      gap: 0;
-      position: relative;
-    }
-    /* LINKE SPALTE - Kontaktinfos */
-    .sidebar {
-      grid-column: 1;
-      grid-row: 1 / 4;
-      background: white;
-      padding: 1.5cm 0.5cm;
-      border-right: 1px solid #eee;
-      font-size: 9px;
-      line-height: 1.4;
-      color: #d31920;
-    }
-    .sidebar-item { margin-bottom: 1.2cm; }
-    .sidebar-title { font-weight: bold; margin-bottom: 3px; }
-    .sidebar-content { font-size: 8px; }
-    /* LOGO OBEN RECHTS */
-    .logo-circle {
-      grid-column: 2;
-      grid-row: 1;
-      text-align: right;
-      padding: 0.8cm 1.5cm;
-      border-bottom: 1px solid #eee;
-    }
-    .logo-svg {
-      width: 3cm;
-      height: 3cm;
-      background: white;
-      border-radius: 50%;
-      border: 2px solid #d31920;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: #d31920;
-      font-size: 28px;
-    }
-    /* HAUPTTEXT */
-    .content {
-      grid-column: 2;
-      grid-row: 2;
-      padding: 1.2cm 1.5cm;
-      overflow-y: auto;
-    }
-    .betreff {
-      font-weight: bold;
-      margin-bottom: 0.8cm;
-      font-size: 12px;
-    }
-    .anrede {
-      margin-bottom: 0.5cm;
-      font-size: 11px;
-      line-height: 1.5;
-    }
-    .feedback-text {
-      font-size: 10.5px;
-      line-height: 1.7;
-      text-align: justify;
-      margin: 0.8cm 0;
-      color: #444;
-    }
-    .footer-text {
-      margin: 1cm 0 0;
-      font-size: 10px;
-      line-height: 1.6;
-      padding: 0.8cm;
-      background: #f5f5f5;
-      border-left: 2px solid #d31920;
-    }
-    .footer-text a { color: #d31920; text-decoration: underline; font-weight: bold; }
-    .gruss {
-      margin-top: 1.2cm;
-      font-size: 10px;
-    }
-    .signature {
-      margin-top: 2cm;
-      line-height: 1.3;
-      font-size: 10px;
-    }
-    .signature-line {
-      width: 3cm;
-      border-top: 1px solid #333;
-      margin-bottom: 2px;
-    }
-    /* UNTEN - Sponsoren */
-    .footer {
-      grid-column: 1 / 3;
-      grid-row: 3;
-      border-top: 1px solid #eee;
-      padding: 0.6cm 1.5cm;
-      text-align: center;
-      background: #f9f9f9;
-      font-size: 8px;
-      color: #999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5cm;
-    }
-    .footer-logo { height: 0.4cm; opacity: 0.6; }
+    * { margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; color: #333; background: white; padding: 20px; line-height: 1.6; }
+    .page { max-width: 21cm; margin: 0 auto; padding: 2cm; background: white; }
+    .betreff { font-weight: bold; margin-bottom: 20px; font-size: 13px; }
+    .anrede { margin-bottom: 15px; font-size: 12px; }
+    .feedback-text { font-size: 12px; line-height: 1.7; text-align: justify; margin: 15px 0; }
+    .footer-text { margin: 20px 0; font-size: 11px; line-height: 1.6; }
+    .footer-text a { color: #d31920; text-decoration: underline; }
+    .gruss { margin-top: 25px; font-size: 12px; }
+    .signature { margin-top: 50px; }
   </style>
 </head>
 <body>
   <div class="page">
-    <!-- LINKE SPALTE -->
-    <div class="sidebar">
-      <div class="sidebar-item">
-        <div class="sidebar-title">Fortuna Düsseldorf</div>
-        <div class="sidebar-content">1895 e.V.</div>
-        <div class="sidebar-content">Arena-Straße 1</div>
-        <div class="sidebar-content">40217 Düsseldorf</div>
-      </div>
-      <div class="sidebar-item">
-        <div class="sidebar-title">Telefon</div>
-        <div class="sidebar-content">+49 (0)211 258-01-0</div>
-      </div>
-      <div class="sidebar-item">
-        <div class="sidebar-title">Talentscout</div>
-        <div class="sidebar-content">service@f95.de</div>
-      </div>
+    <div class="betreff">Betreff: Feedback – ${esc(p.vorname)} ${esc(p.nachname)} – ${esc(badge)}</div>
+
+    <div class="anrede">Liebe/r ${esc(p.vorname)},</div>
+
+    <div class="feedback-text">
+      ${esc(feedback).replace(/\n\n/g, "<p>").replace(/\n/g, " ")}<p>
+      <strong>Bewertung: ${bewertung} / 10</strong>
     </div>
 
-    <!-- LOGO OBEN RECHTS -->
-    <div class="logo-circle">
-      <div class="logo-svg">F95</div>
-    </div>
+    ${callToAction ? `<div class="footer-text">${callToAction}</div>` : ""}
 
-    <!-- HAUPTTEXT -->
-    <div class="content">
-      <div class="betreff">Betreff: Feedback - ${esc(p.vorname)} ${esc(p.nachname)} (Bewertung: ${bewertung}/10)</div>
-
-      <div class="anrede">Liebe/r ${esc(p.vorname)},</div>
-
-      <div class="feedback-text">
-        ${esc(feedback).replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>")}
+    <div class="gruss">
+      Beste Grüße,<br>
+      <div class="signature">
+        <br><br>
+        F95 Talentscout
       </div>
-
-      ${callToAction ? `<div class="footer-text">${callToAction}</div>` : ""}
-
-      <div class="gruss">
-        Beste Grüße,<br>
-        <div class="signature">
-          <div class="signature-line"></div>
-          F95 Talentscout
-        </div>
-      </div>
-    </div>
-
-    <!-- UNTEN -->
-    <div class="footer">
-      <span>Fortuna Düsseldorf 1895 e.V. | Generiert am ${day}.${month}.${year}</span>
     </div>
   </div>
 
