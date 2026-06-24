@@ -597,6 +597,7 @@ function tabProfil(p) {
     <div class="card"><h3>Stammdaten</h3><table><tbody>
       ${zeile("Geburtsdatum", `${fmtDatum(p.geburtsdatum)} (${alter(p)} Jahre)`)}
       ${zeile("Nationalität", esc(p.nationalitaet))}
+      ${zeile("Talent-Kategorie", p.talent ? `<span class="badge ${p.talent==="A"?"badge-gruen":p.talent==="B"?"badge-gelb":"badge-grau"}">${p.talent}</span>` : "–")}
       ${zeile("Größe / Gewicht", `${p.groesse} cm / ${p.gewicht} kg`)}
       ${zeile("Starker Fuß", esc(p.starkerFuss))}
       ${zeile("Schwacher Fuß", `<span class="stars">${"★".repeat(p.schwacherFuss)}${"☆".repeat(5 - p.schwacherFuss)}</span>`)}
@@ -1163,8 +1164,8 @@ function toast(text, aktion) {
 }
 window.toast = toast;
 
-function feld(label, name, typ = "text", attrs = "", optionen = null) {
-  if (optionen) return `<div class="field"><label>${label}</label><select name="${name}" ${attrs}>${optionen.map(o => `<option>${o}</option>`).join("")}</select></div>`;
+function feld(label, name, typ = "text", attrs = "", optionen = null, selected = null) {
+  if (optionen) return `<div class="field"><label>${label}</label><select name="${name}" ${attrs}>${optionen.map(o => `<option ${selected === o ? "selected" : ""}>${o}</option>`).join("")}</select></div>`;
   return `<div class="field"><label>${label}</label><input name="${name}" type="${typ}" ${attrs}></div>`;
 }
 
@@ -1232,6 +1233,7 @@ function modalSpielerBearbeiten(id) {
         ${feld("Nachname *", "nachname", "text", `required value="${esc(p.nachname)}"`)}
         ${feld("Geburtsdatum *", "geburtsdatum", "date", `required value="${p.geburtsdatum || ""}"`)}
         ${feld("Nationalität", "nationalitaet", "text", `value="${esc(p.nationalitaet || "")}"`)}
+        ${feld("Talent-Kategorie", "talent", "text", "", ["", "A", "B", "C"], p.talent || "")}
         ${feld("Verein *", "verein", "text", `required value="${esc(p.verein)}"`)}
         ${feld("Liga", "liga", "text", `value="${esc(p.liga || "")}"`)}
         ${feld("Verband", "verband", "text", `value="${esc(p.verband || "")}"`)}
@@ -1257,6 +1259,7 @@ function modalSpielerBearbeiten(id) {
     p.nachname = fd.get("nachname");
     p.geburtsdatum = fd.get("geburtsdatum");
     p.nationalitaet = fd.get("nationalitaet") || "Deutschland";
+    p.talent = fd.get("talent") || "";
     p.verein = fd.get("verein");
     p.liga = fd.get("liga") || "";
     p.verband = fd.get("verband") || "";
@@ -2033,8 +2036,9 @@ function csvImportBestaetigen() {
       hauptposition: k.hauptposition || "Mittelfeld (Zentral)",
       nebenpositionen: [],
       vertragsstatus: "", vertragsende: k.vertragsende || "",
-      berater: "", kontakt: "",
+      berater: "", kontakt: k.kontakt || "",
       marktwert: k.marktwert ? (+k.marktwert || null) : null,
+      talent: (k._talent && /^[ABC]$/.test(k._talent.toUpperCase())) ? k._talent.toUpperCase() : "",
       pool: POOL_MAP[k.pool] || "beobachten",
       trialStatus: "Keine", trialUrteil: "",
       erstelltAm: HEUTE.toISOString().slice(0, 10),

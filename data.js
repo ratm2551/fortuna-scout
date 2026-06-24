@@ -204,6 +204,7 @@ function normalisiereSpieler(p) {
   if (!p.ratings)     p.ratings     = leereRatings();
   if (!p.statistiken) p.statistiken = {};
   if (!p.notizen)     p.notizen     = "";
+  if (!p.talent)      p.talent      = "";
   return p;
 }
 
