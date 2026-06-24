@@ -1250,16 +1250,16 @@ function modalNeuerSpieler() {
       <div class="form-grid">
         ${feld("Vorname *", "vorname", "text", "required")}
         ${feld("Nachname *", "nachname", "text", "required")}
-        ${feld("Geburtsdatum *", "geburtsdatum", "date", "required")}
+        ${feld("Geburtsdatum", "geburtsdatum", "date")}
         ${feld("Nationalität", "nationalitaet")}
-        ${feld("Verein *", "verein", "text", "required")}
+        ${feld("Verein", "verein", "text")}
         ${feld("Liga", "liga")}
         ${feld("Verband", "verband", "text", 'value="FVN"')}
         ${feld("Größe (cm)", "groesse", "number")}
         ${feld("Gewicht (kg)", "gewicht", "number")}
         ${feld("Starker Fuß", "starkerFuss", "text", "", ["Rechts", "Links", "Beidfüßig"])}
         ${feld("Schwacher Fuß (1–5)", "schwacherFuss", "number", 'min="1" max="5" value="3"')}
-        ${feld("Hauptposition *", "hauptposition", "text", "required", POSITIONEN)}
+        ${feld("Hauptposition", "hauptposition", "text", "", POSITIONEN)}
         ${feld("Vertragsstatus", "vertragsstatus")}
         ${feld("Vertragsende", "vertragsende", "date")}
         ${feld("Berater", "berater")}
@@ -1308,19 +1308,19 @@ function modalSpielerBearbeiten(id) {
       <div class="form-grid">
         ${feld("Vorname *", "vorname", "text", `required value="${esc(p.vorname)}"`)}
         ${feld("Nachname *", "nachname", "text", `required value="${esc(p.nachname)}"`)}
-        ${feld("Geburtsdatum *", "geburtsdatum", "date", `required value="${p.geburtsdatum || ""}"`)}
+        ${feld("Geburtsdatum", "geburtsdatum", "date", `value="${p.geburtsdatum || ""}"`)}
         ${feld("Nationalität", "nationalitaet", "text", `value="${esc(p.nationalitaet || "")}"`)}
         ${feld("Talent-Kategorie", "talent", "text", "", ["", "A", "B", "C"], p.talent || "")}
         ${feld("Session-Badge", "sessionBadge", "text", "", BADGES.map(b => b.label), (BADGES.find(b => b.label === p.sessionBadge) ? p.sessionBadge : ""))}
         ${feld("Gesamtbewertung pro Session (1-10)", "gesamtbewertungSession", "number", `min="0" max="10" value="${p.gesamtbewertungSession || 0}"`)}
-        ${feld("Verein *", "verein", "text", `required value="${esc(p.verein)}"`)}
+        ${feld("Verein", "verein", "text", `value="${esc(p.verein)}"`)}
         ${feld("Liga", "liga", "text", `value="${esc(p.liga || "")}"`)}
         ${feld("Verband", "verband", "text", `value="${esc(p.verband || "")}"`)}
         ${feld("Größe (cm)", "groesse", "number", `value="${p.groesse || ""}"`)}
         ${feld("Gewicht (kg)", "gewicht", "number", `value="${p.gewicht || ""}"`)}
         ${feld("Starker Fuß", "starkerFuss", "text", "", ["Rechts", "Links", "Beidfüßig"])}
         ${feld("Schwacher Fuß (1–5)", "schwacherFuss", "number", `min="1" max="5" value="${p.schwacherFuss || 3}"`)}
-        ${feld("Hauptposition *", "hauptposition", "text", "required", POSITIONEN)}
+        ${feld("Hauptposition", "hauptposition", "text", "", POSITIONEN)}
         ${feld("Vertragsstatus", "vertragsstatus", "text", `value="${esc(p.vertragsstatus || "")}"`)}
         ${feld("Vertragsende", "vertragsende", "date", `value="${p.vertragsende || ""}"`)}
         ${feld("Berater", "berater", "text", `value="${esc(p.berater || "")}"`)}
