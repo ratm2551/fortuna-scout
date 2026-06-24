@@ -22,10 +22,17 @@ function alter(p) {
   return a;
 }
 function initialen(p) { return (p.vorname[0] || "") + (p.nachname[0] || ""); }
-function fmtDatum(iso) {
-  if (!iso) return "–";
-  const [j, m, t] = iso.split("-");
-  return `${t}.${m}.${j}`;
+function fmtDatum(d) {
+  if (!d) return "–";
+  d = String(d).trim();
+  // ISO-Format YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    const [j, m, t] = d.split("-");
+    return `${t}.${m}.${j}`;
+  }
+  // Deutsches Format DD.MM.YYYY
+  if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(d)) return d;
+  return "–";
 }
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
