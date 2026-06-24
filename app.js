@@ -176,24 +176,24 @@ const BADGES = [
 const FEEDBACK_VORLAGEN = {
   // Gruppe 1: Sehr gut (1-3)
   gruppe1: [
-    "Der Spieler zeigt hervorragende technische Fähigkeiten mit sauberer Ballannahme und präzisem Passspiel. Ein sehr gutes Spielverständnis und schnelle Entscheidungen zeichnen ihn aus. Mit hoher Konzentration und großem Entwicklungspotenzial ist er ein Spieler, der sich deutlich abheben wird. Die körperlichen Voraussetzungen sowie die mentale Einstellung versprechen eine erfolgreiche weitere Entwicklung auf höchstem Niveau.",
-    "Beeindruckende Leistung mit dynamischem Spiel und ausgezeichneter Ballkontrolle. Der Spieler besticht durch schnelle Orientierung im Feld und aktive Spielbeteiligung. Bereits weit entwickelt für sein Niveau mit enormem Potenzial. Die Fähigkeit, Spielsituationen schnell zu erfassen und clever zu reagieren, hebt ihn deutlich von gleichaltrigen Spielern ab.",
-    "Der Spieler präsentiert sich mit großer Sicherheit am Ball und trifft passende Entscheidungen. Sein taktisches Verständnis und seine körperliche Präsenz sind bemerkenswert. Ein Spieler mit klarer Entwicklungsperspektive auf hohem Niveau. Besonders hervorzuheben ist seine mentale Stabilität und die Fähigkeit, unter Druck gute Leistungen zu erbringen.",
-    "Ausgezeichnete Grundlagen mit sicherer Ballbehandlung und gutem Spielverständnis. Der Spieler arbeitet aktiv mit und zeigt bereits hohe Konzentration über längere Phasen. Großes Potential erkennbar. Seine Trainingsleistung und die schnelle Umsetzung von Anweisungen sprechen für eine erfolgreiche Weiterentwicklung in den kommenden Jahren.",
+    "Der Spieler zeigt hervorragende technische Fähigkeiten mit sauberer Ballannahme und präzisem Passspiel. Ein sehr gutes Spielverständnis und schnelle Entscheidungen zeichnen ihn aus. Mit hoher Konzentration und großem Entwicklungspotenzial ist er ein Spieler, der sich deutlich abheben wird. Die körperlichen Voraussetzungen sowie die mentale Einstellung versprechen eine erfolgreiche weitere Entwicklung auf höchstem Niveau. Wir sind sehr optimistisch hinsichtlich seiner Karrierechancen und freuen uns auf die weitere Zusammenarbeit.",
+    "Beeindruckende Leistung mit dynamischem Spiel und ausgezeichneter Ballkontrolle. Der Spieler besticht durch schnelle Orientierung im Feld und aktive Spielbeteiligung. Bereits weit entwickelt für sein Niveau mit enormem Potenzial. Die Fähigkeit, Spielsituationen schnell zu erfassen und clever zu reagieren, hebt ihn deutlich von gleichaltrigen Spielern ab. Seine Konstanz und sein Selbstbewusstsein sind besonders beeindruckend.",
+    "Der Spieler präsentiert sich mit großer Sicherheit am Ball und trifft passende Entscheidungen. Sein taktisches Verständnis und seine körperliche Präsenz sind bemerkenswert. Ein Spieler mit klarer Entwicklungsperspektive auf hohem Niveau. Besonders hervorzuheben ist seine mentale Stabilität und die Fähigkeit, unter Druck gute Leistungen zu erbringen. Seine Trainingsleistung deutet auf einen sehr seriösen Umgang mit der Chance hin.",
+    "Ausgezeichnete Grundlagen mit sicherer Ballbehandlung und gutem Spielverständnis. Der Spieler arbeitet aktiv mit und zeigt bereits hohe Konzentration über längere Phasen. Großes Potential erkennbar. Seine Trainingsleistung und die schnelle Umsetzung von Anweisungen sprechen für eine erfolgreiche Weiterentwicklung in den kommenden Jahren. Wir sehen in ihm einen Spieler mit Potential für höhere Ebenen.",
   ],
   // Gruppe 2: Gut / Solide (4-6)
   gruppe2: [
-    "Der Spieler bringt gute Grundfähigkeiten mit und beteiligt sich aktiv am Spiel. Mit sauberer Ballannahme in den meisten Situationen und zuverlässigem Passspiel ist er ein solider Spieler. Mit gezieltem Training sind deutliche Fortschritte zu erwarten. Sein Engagement und seine Lernfähigkeit deuten darauf hin, dass er mit systematischer Förderung weiter vorankommen wird.",
-    "Ordentliche Leistung mit erkennbarem Spielverständnis und guter Einsatzbereitschaft. Der Spieler zeigt positive Ansätze und verbessert sich kontinuierlich. Ein Training der Grundlagen bringt sicher weitere Entwicklung. Mit speziellem Fokus auf die technische und athletische Verbesserung können wir eine positive Entwicklungskurve erzielen.",
-    "Der Spieler verfügt über gute Grundlagen im Umgang mit dem Ball und gute Orientierung im Spiel. Mit solider Ausdauer und Konzentration ist eine weitere Steigerung mit regelmäßigem Training möglich. Seine Trainingsmotivation ist erkennbar und schafft eine gute Grundlage für seine Weiterentwicklung. Kontinuierliche Unterstützung ist wichtig für seinen Fortschritt.",
-    "Guter Spieler mit zuverlässigem Passspiel und Grundverständnis für Spielsituationen. Die Entwicklung schreitet voran und mit weiterer Übung sind Verbesserungen in allen Bereichen zu erwarten. Seine Bereitschaft, an sich selbst zu arbeiten, ist sehr positiv. Wir sehen gutes Potenzial für eine erfolgreiche Karriereentwicklung.",
+    "Der Spieler bringt gute Grundfähigkeiten mit und beteiligt sich aktiv am Spiel. Mit sauberer Ballannahme in den meisten Situationen und zuverlässigem Passspiel ist er ein solider Spieler. Mit gezieltem Training sind deutliche Fortschritte zu erwarten. Sein Engagement und seine Lernfähigkeit deuten darauf hin, dass er mit systematischer Förderung weiter vorankommen wird. Wir sehen gutes Potential für eine positive Entwicklung.",
+    "Ordentliche Leistung mit erkennbarem Spielverständnis und guter Einsatzbereitschaft. Der Spieler zeigt positive Ansätze und verbessert sich kontinuierlich. Ein Training der Grundlagen bringt sicher weitere Entwicklung. Mit speziellem Fokus auf die technische und athletische Verbesserung können wir eine positive Entwicklungskurve erzielen. Sein Engagement beim Training ist sehr ermutigend.",
+    "Der Spieler verfügt über gute Grundlagen im Umgang mit dem Ball und gute Orientierung im Spiel. Mit solider Ausdauer und Konzentration ist eine weitere Steigerung mit regelmäßigem Training möglich. Seine Trainingsmotivation ist erkennbar und schafft eine gute Grundlage für seine Weiterentwicklung. Kontinuierliche Unterstützung ist wichtig für seinen Fortschritt. Mit gezieltem Training kann er deutlich vorankommen.",
+    "Guter Spieler mit zuverlässigem Passspiel und Grundverständnis für Spielsituationen. Die Entwicklung schreitet voran und mit weiterer Übung sind Verbesserungen in allen Bereichen zu erwarten. Seine Bereitschaft, an sich selbst zu arbeiten, ist sehr positiv. Wir sehen gutes Potenzial für eine erfolgreiche Karriereentwicklung. Regelmäßiges Training ist der Schlüssel für seinen weiteren Aufstieg.",
   ],
   // Gruppe 3: Im Aufbau / Einstieg (7-10)
   gruppe3: [
-    "Der Spieler zeigt erste positive Ansätze und arbeitet aktiv an seiner Entwicklung. Mit Fokus auf die Grundlagen und kontinuierlichem Training sind gute Fortschritte möglich. Wichtig ist die regelmäßige Unterstützung durch erfahrene Trainer. Ein spezielles Fördertraining wird ihm helfen, seine Fähigkeiten systematisch auszubauen und schneller voranzukommen.",
-    "Erste Fortschritte im Umgang mit dem Ball sind erkennbar. Der Spieler bringt gute Lernbereitschaft mit und nimmt aktiv am Spiel teil. Mit Geduld und gezieltem Training wird die Entwicklung vorangehen. Ein Schwerpunkt-Training mit Fokus auf die technischen Grundlagen wird empfohlen, um die Entwicklung zu beschleunigen.",
-    "Der Spieler entwickelt sich schrittweise und zeigt Einsatzbereitschaft. Die Grundlagen werden aufgebaut und mit Anleitung verbessern sich die Bewegungsabläufe kontinuierlich. Weiterhin wichtig: regelmäßiges Spieltraining. Ein intensives Fördertraining kann helfen, Lücken in der technischen Ausbildung zu schließen und die Entwicklung zu beschleunigen.",
-    "Gute Bereitschaft zur Mitarbeit und erste sichere Aktionen sind erkennbar. Das Ballgefühl entwickelt sich und mit kontinuierlicher Förderung sind Verbesserungen zu sehen. Fokus auf Spielpraxis ist sinnvoll. Ein spezialisiertes Trainingskonzept wird empfohlen, um die Grundlagen zu stabilisieren und die individuelle Entwicklung zu optimieren.",
+    "Der Spieler zeigt erste positive Ansätze und arbeitet aktiv an seiner Entwicklung. Mit Fokus auf die Grundlagen und kontinuierlichem Training sind gute Fortschritte möglich. Wichtig ist die regelmäßige Unterstützung durch erfahrene Trainer. Ein spezielles Fördertraining wird ihm helfen, seine Fähigkeiten systematisch auszubauen und schneller voranzukommen. Sein Engagement ist ein gutes Zeichen für die weitere Zusammenarbeit.",
+    "Erste Fortschritte im Umgang mit dem Ball sind erkennbar. Der Spieler bringt gute Lernbereitschaft mit und nimmt aktiv am Spiel teil. Mit Geduld und gezieltem Training wird die Entwicklung vorangehen. Ein Schwerpunkt-Training mit Fokus auf die technischen Grundlagen wird empfohlen, um die Entwicklung zu beschleunigen. Die Bereitschaft, zu lernen, ist wichtiger als das aktuelle Niveau.",
+    "Der Spieler entwickelt sich schrittweise und zeigt Einsatzbereitschaft. Die Grundlagen werden aufgebaut und mit Anleitung verbessern sich die Bewegungsabläufe kontinuierlich. Weiterhin wichtig: regelmäßiges Spieltraining. Ein intensives Fördertraining kann helfen, Lücken in der technischen Ausbildung zu schließen und die Entwicklung zu beschleunigen. Geduld und Konstanz werden belohnt.",
+    "Gute Bereitschaft zur Mitarbeit und erste sichere Aktionen sind erkennbar. Das Ballgefühl entwickelt sich und mit kontinuierlicher Förderung sind Verbesserungen zu sehen. Fokus auf Spielpraxis ist sinnvoll. Ein spezialisiertes Trainingskonzept wird empfohlen, um die Grundlagen zu stabilisieren und die individuelle Entwicklung zu optimieren. Mit regelmäßigem Training wird Fortschritt entstehen.",
   ]
 };
 
@@ -1921,14 +1921,22 @@ function feedbackExportieren(id) {
   const datum = HEUTE.toLocaleDateString("de-DE");
   const [day, month, year] = datum.split(".");
 
-  // Feedback-Text mit Call-to-Action je nach Gruppe
+  // Feedback-Text mit Call-to-Action je nach Bewertung
   let callToAction = "";
   if (bewertung <= 3 && FEEDBACK_LINKS.bewerbung) {
     callToAction = `Du erfüllst alle Anforderungen für den nächsten Badge! Bewirb dich direkt über diesen Link:<br><a href="${esc(FEEDBACK_LINKS.bewerbung)}">${esc(FEEDBACK_LINKS.bewerbung)}</a>`;
   } else if (bewertung <= 6 && FEEDBACK_LINKS.bewerbung) {
     callToAction = `Wir laden dich herzlich zum nächsten Badge ein! Bewirb dich über diesen Link:<br><a href="${esc(FEEDBACK_LINKS.bewerbung)}">${esc(FEEDBACK_LINKS.bewerbung)}</a>`;
-  } else if (bewertung >= 7 && FEEDBACK_LINKS.schwerpunkttraining) {
-    callToAction = `Wir empfehlen dir unser Schwerpunkt-Training am Sonntag. Melde dich hier an:<br><a href="${esc(FEEDBACK_LINKS.schwerpunkttraining)}">${esc(FEEDBACK_LINKS.schwerpunkttraining)}</a>`;
+  } else if (bewertung === 8) {
+    if (FEEDBACK_LINKS.bewerbung && FEEDBACK_LINKS.schwerpunkttraining) {
+      callToAction = `Du hast eine zweite Chance für ein Vorspielen! Bewirb dich für das nächste Vorspielen über diesen Link:<br><a href="${esc(FEEDBACK_LINKS.bewerbung)}">${esc(FEEDBACK_LINKS.bewerbung)}</a><br><br>Zusätzlich empfehlen wir dir, unser Schwerpunkt-Training zu nutzen, um an deinen Stärken zu arbeiten und deine Chancen zu erhöhen:<br><a href="${esc(FEEDBACK_LINKS.schwerpunkttraining)}">${esc(FEEDBACK_LINKS.schwerpunkttraining)}</a>`;
+    } else if (FEEDBACK_LINKS.bewerbung) {
+      callToAction = `Du hast eine zweite Chance für ein Vorspielen! Bewirb dich für das nächste Vorspielen über diesen Link:<br><a href="${esc(FEEDBACK_LINKS.bewerbung)}">${esc(FEEDBACK_LINKS.bewerbung)}</a>`;
+    }
+  } else if (bewertung > 8 && FEEDBACK_LINKS.schwerpunkttraining) {
+    callToAction = `Wir empfehlen dir unser Schwerpunkt-Training am Sonntag, um an deinen Grundlagen zu arbeiten. Melde dich hier an:<br><a href="${esc(FEEDBACK_LINKS.schwerpunkttraining)}">${esc(FEEDBACK_LINKS.schwerpunkttraining)}</a>`;
+  } else if (bewertung === 7 && FEEDBACK_LINKS.schwerpunkttraining) {
+    callToAction = `Wir empfehlen dir unser Schwerpunkt-Training am Sonntag, um gezielt an deinen Fähigkeiten zu arbeiten. Melde dich hier an:<br><a href="${esc(FEEDBACK_LINKS.schwerpunkttraining)}">${esc(FEEDBACK_LINKS.schwerpunkttraining)}</a>`;
   }
 
   const html = `<!DOCTYPE html>
@@ -1938,31 +1946,115 @@ function feedbackExportieren(id) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Feedback ${esc(p.vorname)} ${esc(p.nachname)}</title>
   <style>
-    * { margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; color: #333; background: #fff; }
-    @page { size: A4; margin: 2cm; }
-    @media print { body { margin: 0; padding: 0; } }
-    .page { width: 21cm; height: 29.7cm; margin: 0 auto; padding: 2cm; box-sizing: border-box; background: white; }
-    .briefkopf { border-bottom: 2px solid #d31920; padding-bottom: 20px; margin-bottom: 30px; }
-    .logo { font-size: 22px; font-weight: bold; color: #d31920; }
-    .subtext { font-size: 12px; color: #666; margin-top: 4px; }
-    .datum-betreff { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
-    .datum-box, .betreff-box { }
-    .label { font-size: 11px; color: #999; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; }
-    .wert { font-size: 14px; }
-    .anrede { margin-bottom: 20px; line-height: 1.6; }
-    .feedback-text { line-height: 1.8; margin: 20px 0; text-align: justify; }
-    .footer-text { margin: 20px 0 0; font-size: 12px; line-height: 1.6; }
-    .gruss { margin-top: 30px; }
-    .signature { margin-top: 50px; }
-    a { color: #d31920; text-decoration: underline; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Arial', sans-serif; color: #333; background: #fff; }
+    @page { size: A4; margin: 0; }
+    @media print { body { margin: 0; padding: 0; } .page { height: 29.7cm; } }
+    .page {
+      width: 21cm;
+      height: 29.7cm;
+      margin: 0 auto;
+      padding: 2.5cm 2cm 2cm 2cm;
+      background: white;
+      position: relative;
+    }
+    .header-bar {
+      background: #d31920;
+      color: white;
+      padding: 12px 0;
+      margin: -2.5cm -2cm 0 -2cm;
+      padding-left: 2cm;
+      padding-right: 2cm;
+      margin-bottom: 25px;
+    }
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+    }
+    .logo-text { font-size: 18px; }
+    .subtext { font-size: 12px; opacity: 0.95; }
+    .header-right { text-align: right; font-size: 11px; line-height: 1.4; }
+    .datum-betreff {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+    }
+    .label {
+      font-size: 10px;
+      color: #999;
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+    .wert {
+      font-size: 13px;
+      color: #333;
+    }
+    .anrede {
+      margin-bottom: 18px;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+    .feedback-text {
+      line-height: 1.85;
+      margin: 20px 0;
+      text-align: justify;
+      font-size: 12px;
+      color: #444;
+    }
+    .rating-badge {
+      display: inline-block;
+      background: #d31920;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 3px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .footer-text {
+      margin: 25px 0 0;
+      font-size: 11px;
+      line-height: 1.7;
+      padding: 15px;
+      background: #f9f9f9;
+      border-left: 3px solid #d31920;
+    }
+    .footer-text a { color: #d31920; text-decoration: none; font-weight: bold; }
+    .footer-text a:hover { text-decoration: underline; }
+    .gruss {
+      margin-top: 35px;
+      font-size: 12px;
+    }
+    .signature {
+      margin-top: 55px;
+      line-height: 1.5;
+    }
+    .signature-line {
+      width: 80px;
+      border-top: 1px solid #333;
+      margin-bottom: 5px;
+    }
   </style>
 </head>
 <body>
   <div class="page">
-    <div class="briefkopf">
-      <div class="logo">F95 Fußballschule</div>
-      <div class="subtext">Fortuna Talent Scout</div>
+    <div class="header-bar">
+      <div class="header-content">
+        <div>
+          <div class="logo-text">F95 Fußballschule</div>
+          <div class="subtext">Fortuna Talent Scout</div>
+        </div>
+        <div class="header-right">
+          <div>${day}.${month}.${year}</div>
+        </div>
+      </div>
     </div>
 
     <div class="datum-betreff">
@@ -1981,7 +2073,7 @@ function feedbackExportieren(id) {
     </div>
 
     <div class="feedback-text">
-      <div style="margin-bottom: 15px;">Bewertung: <strong>${bewertung} / 10</strong></div>
+      <div class="rating-badge">Bewertung: ${bewertung} / 10</div><br>
       ${esc(feedback).replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>")}
     </div>
 
@@ -1989,7 +2081,10 @@ function feedbackExportieren(id) {
 
     <div class="gruss">
       Beste Grüße,<br>
-      <div class="signature">_______________<br>F95 Talentscout</div>
+      <div class="signature">
+        <div class="signature-line"></div>
+        F95 Talentscout
+      </div>
     </div>
   </div>
 
