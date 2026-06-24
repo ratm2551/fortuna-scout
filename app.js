@@ -145,6 +145,21 @@ function generiererFeedback(bewertung) {
   return vorlagen[Math.floor(Math.random() * vorlagen.length)];
 }
 
+// ---------- Feedback-Links-Speicher ----------
+const FEEDBACK_LINKS_KEY = "fortuna-feedback-links-v1";
+const DEFAULT_FEEDBACK_LINKS = {
+  bewerbung: "",
+  schwerpunkttraining: "",
+};
+function ladeFeedbackLinks() {
+  try { const s = localStorage.getItem(FEEDBACK_LINKS_KEY); if (s) return JSON.parse(s); } catch {}
+  return { ...DEFAULT_FEEDBACK_LINKS };
+}
+function speichereFeedbackLinks(links) {
+  localStorage.setItem(FEEDBACK_LINKS_KEY, JSON.stringify(links));
+}
+let FEEDBACK_LINKS = ladeFeedbackLinks();
+
 // ---------- Session-Badges ----------
 const BADGES = [
   { id: 1, label: "Badge 1" },
@@ -1627,7 +1642,7 @@ function viewAdmin() {
         <div class="sub">Benutzerverwaltung &amp; System-Konfiguration</div></div>
     </div>
     <div class="tabs">
-      ${[["benutzer","👥 Benutzerverwaltung"],["score","⭐ Fortuna-Score"],["rechte","🔐 Berechtigungen"],["daten","💾 Datenverwaltung"]]
+      ${[["benutzer","👥 Benutzerverwaltung"],["score","⭐ Fortuna-Score"],["rechte","🔐 Berechtigungen"],["links","🔗 Links & Konfiguration"],["daten","💾 Datenverwaltung"]]
         .map(([k,t]) => `<button class="${adminTab===k?"active":""}" onclick="switchAdminTab('${k}')">${t}</button>`).join("")}
     </div>
     <div id="admin-tab-inhalt"></div>`;
@@ -1643,6 +1658,7 @@ function renderAdminTab() {
   if (!el) return;
   if (adminTab === "benutzer") el.innerHTML = adminTabBenutzer();
   else if (adminTab === "score") el.innerHTML = adminTabScore();
+  else if (adminTab === "links") el.innerHTML = adminTabLinks();
   else if (adminTab === "daten") el.innerHTML = adminTabDaten();
   else el.innerHTML = adminTabBerechtigungen();
 }
@@ -1799,6 +1815,38 @@ function rechtToggle(rolle, rechtId, aktiv) {
 }
 window.rechtToggle = rechtToggle;
 
+function adminTabLinks() {
+  return `
+    <div class="card mt">
+      <h3>🔗 Feedback-Links</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+        Diese Links werden automatisch in den generierten Feedback-PDFs eingefügt.
+      </p>
+      <form style="display:flex;flex-direction:column;gap:16px" onsubmit="speichereFeedbackLinksForm(event)">
+        <div class="field">
+          <label>Bewerbungs-Link (für Gruppe 1-2: sehr gute Spieler)</label>
+          <input type="url" id="link-bewerbung" placeholder="https://..." value="${esc(FEEDBACK_LINKS.bewerbung || "")}" style="border:1px solid var(--border);border-radius:6px;padding:8px;background:var(--bg-card);color:var(--text);width:100%">
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Wird in den Feedback-Text eingefügt: "Bewirb dich direkt über: [LINK]"</div>
+        </div>
+        <div class="field">
+          <label>Schwerpunkt-Training Link (für Gruppe 3: im Aufbau)</label>
+          <input type="url" id="link-training" placeholder="https://..." value="${esc(FEEDBACK_LINKS.schwerpunkttraining || "")}" style="border:1px solid var(--border);border-radius:6px;padding:8px;background:var(--bg-card);color:var(--text);width:100%">
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Wird in den Feedback-Text eingefügt: "Melde dich an: [LINK]"</div>
+        </div>
+        <button type="submit" class="btn" style="align-self:flex-start">💾 Links speichern</button>
+      </form>
+    </div>`;
+}
+
+function speichereFeedbackLinksForm(e) {
+  e.preventDefault();
+  FEEDBACK_LINKS.bewerbung = document.getElementById("link-bewerbung").value || "";
+  FEEDBACK_LINKS.schwerpunkttraining = document.getElementById("link-training").value || "";
+  speichereFeedbackLinks(FEEDBACK_LINKS);
+  toast("Links gespeichert.");
+}
+window.speichereFeedbackLinksForm = speichereFeedbackLinksForm;
+
 function adminTabDaten() {
   return `
     <div class="card mt">
@@ -1872,6 +1920,16 @@ function feedbackExportieren(id) {
   const bewertung = p.gesamtbewertungSession || 0;
   const datum = HEUTE.toLocaleDateString("de-DE");
 
+  // Feedback-Text mit Call-to-Action je nach Gruppe
+  let feedbackText = feedback;
+  if (bewertung <= 3 && FEEDBACK_LINKS.bewerbung) {
+    feedbackText += `\n\nDu erfüllst alle Anforderungen für den nächsten Badge! Bewirb dich direkt über diesen Link:\n${FEEDBACK_LINKS.bewerbung}`;
+  } else if (bewertung <= 6 && FEEDBACK_LINKS.bewerbung) {
+    feedbackText += `\n\nWir laden dich herzlich zum nächsten Badge ein! Bewirb dich über diesen Link:\n${FEEDBACK_LINKS.bewerbung}`;
+  } else if (bewertung >= 7 && FEEDBACK_LINKS.schwerpunkttraining) {
+    feedbackText += `\n\nWir empfehlen dir unser Schwerpunkt-Training am Sonntag. Dort kannst du gezielt an deinen Stärken und Schwächen arbeiten und dich beim nächsten Vorspielen erneut zeigen!\nMelde dich hier an: ${FEEDBACK_LINKS.schwerpunkttraining}`;
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -1920,7 +1978,7 @@ function feedbackExportieren(id) {
   </div>
 
   <div class="feedback">
-    ${esc(feedback)}
+    ${esc(feedbackText).replace(/\n/g, "<br>")}
   </div>
 
   <div class="footer">
