@@ -1561,7 +1561,7 @@ function viewAdmin() {
         <div class="sub">Benutzerverwaltung &amp; System-Konfiguration</div></div>
     </div>
     <div class="tabs">
-      ${[["benutzer","👥 Benutzerverwaltung"],["score","⭐ Fortuna-Score"],["rechte","🔐 Berechtigungen"]]
+      ${[["benutzer","👥 Benutzerverwaltung"],["score","⭐ Fortuna-Score"],["rechte","🔐 Berechtigungen"],["daten","💾 Datenverwaltung"]]
         .map(([k,t]) => `<button class="${adminTab===k?"active":""}" onclick="switchAdminTab('${k}')">${t}</button>`).join("")}
     </div>
     <div id="admin-tab-inhalt"></div>`;
@@ -1577,6 +1577,7 @@ function renderAdminTab() {
   if (!el) return;
   if (adminTab === "benutzer") el.innerHTML = adminTabBenutzer();
   else if (adminTab === "score") el.innerHTML = adminTabScore();
+  else if (adminTab === "daten") el.innerHTML = adminTabDaten();
   else el.innerHTML = adminTabBerechtigungen();
 }
 window.renderAdminTab = renderAdminTab;
@@ -1731,6 +1732,70 @@ function rechtToggle(rolle, rechtId, aktiv) {
   updateNav();
 }
 window.rechtToggle = rechtToggle;
+
+function adminTabDaten() {
+  return `
+    <div class="card mt">
+      <h3>🗑️ Datenverwaltung</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+        Verwalte die komplette Spielerdatenbank.
+      </p>
+      <div class="warnung gruen" style="margin-bottom:20px">
+        <strong>Aktuelle Datenbank:</strong> ${SPIELER.length} Spieler
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" style="background:var(--rot);border-color:var(--rot);color:#fff" onclick="modalDatenbankLoeschen()">
+          🗑️ Komplette Datenbank löschen
+        </button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px">
+        ⚠️ Diese Aktion kann nicht rückgängig gemacht werden. Du wirst zur Bestätigung aufgefordert.
+      </p>
+    </div>`;
+}
+
+function modalDatenbankLoeschen() {
+  const root = document.getElementById("modal-root");
+  root.innerHTML = `<div class="modal-backdrop"><div class="modal" style="max-width:500px">
+    <h3 style="color:var(--rot)">⚠️ Datenbank löschen?</h3>
+    <p style="margin:16px 0;color:var(--muted);line-height:1.6">
+      <strong>Achtung!</strong> Dies löscht alle <strong>${SPIELER.length} Spieler</strong> aus der Datenbank.
+      Diese Aktion <strong>kann nicht rückgängig gemacht werden</strong>.
+    </p>
+    <p style="margin:16px 0;font-size:13px">
+      Um zu bestätigen, gib <strong style="font-family:monospace;background:var(--bg-card);padding:2px 4px;border-radius:3px">LÖSCHEN</strong> ein:
+    </p>
+    <input id="loeschen-confirm" type="text" placeholder="LÖSCHEN" autocomplete="off"
+      style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px;background:var(--bg-card);color:var(--text);font-size:13px;margin-bottom:16px">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+      <button class="btn" style="background:var(--rot);border-color:var(--rot)" onclick="datenbankLoeschenBestaetigt()" disabled id="loeschen-btn">
+        Unwiderruflich löschen
+      </button>
+    </div>
+  </div></div>`;
+  const input = document.getElementById("loeschen-confirm");
+  const btn = document.getElementById("loeschen-btn");
+  input.addEventListener("input", () => {
+    btn.disabled = input.value !== "LÖSCHEN";
+  });
+  input.focus();
+  document.querySelector(".modal-backdrop").addEventListener("click", e => {
+    if (e.target.classList.contains("modal-backdrop")) schliesseModal();
+  });
+}
+window.modalDatenbankLoeschen = modalDatenbankLoeschen;
+
+function datenbankLoeschenBestaetigt() {
+  SPIELER = [];
+  speichern();
+  loescheFirebaseEintrag("spieler");
+  _fbDb?.ref('spieler').remove();
+  schliesseModal();
+  toast("✓ Datenbank vollständig gelöscht. Du kannst jetzt neue Daten importieren.");
+  renderAdminTab();
+}
+window.datenbankLoeschenBestaetigt = datenbankLoeschenBestaetigt;
 
 function berechtigungenZuruecksetzen() {
   BERECHTIGUNGEN = JSON.parse(JSON.stringify(DEFAULT_BERECHTIGUNGEN));
