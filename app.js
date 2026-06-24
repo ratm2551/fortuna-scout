@@ -133,6 +133,18 @@ function ladeScoreConfig() {
 function speichereScoreConfig() { localStorage.setItem(SCORE_CONFIG_KEY, JSON.stringify(SCORE_CONFIG)); }
 let SCORE_CONFIG = ladeScoreConfig();
 
+// ---------- Session-Badges ----------
+const BADGES = [
+  { id: 1, label: "Badge 1" },
+  { id: 2, label: "Badge 2" },
+  { id: 3, label: "Badge 3" },
+  { id: 4, label: "Badge 4" },
+  { id: 5, label: "Badge 5" },
+  { id: 6, label: "Badge 6" },
+  { id: 7, label: "Badge 7" },
+  { id: 8, label: "Badge 8" },
+];
+
 // ---------- Berechtigungen ----------
 const BERECHTIGUNGEN_KEY = "fortuna-berechtigungen-v1";
 const ALLE_RECHTE = [
@@ -605,6 +617,8 @@ function tabProfil(p) {
       ${zeile("Geburtsdatum", `${fmtDatum(p.geburtsdatum)} (${alter(p)} Jahre)`)}
       ${zeile("Nationalität", esc(p.nationalitaet))}
       ${zeile("Talent-Kategorie", p.talent ? `<span class="badge ${p.talent==="A"?"badge-gruen":p.talent==="B"?"badge-gelb":"badge-grau"}">${p.talent}</span>` : "–")}
+      ${zeile("Session-Badge", p.sessionBadge ? esc(p.sessionBadge) : "–")}
+      ${zeile("Gesamtbewertung pro Session", p.gesamtbewertungSession ? `<span class="badge ${p.gesamtbewertungSession <= 3 ? "badge-gruen" : p.gesamtbewertungSession <= 6 ? "badge-gelb" : "badge-grau"}">${p.gesamtbewertungSession} / 10</span>` : "–")}
       ${zeile("Größe / Gewicht", `${p.groesse} cm / ${p.gewicht} kg`)}
       ${zeile("Starker Fuß", esc(p.starkerFuss))}
       ${zeile("Schwacher Fuß", `<span class="stars">${"★".repeat(p.schwacherFuss)}${"☆".repeat(5 - p.schwacherFuss)}</span>`)}
@@ -1220,6 +1234,9 @@ function modalNeuerSpieler() {
       ratings: leereRatings(), videos: [], berichte: [], entwicklung: [],
     };
     neu.notizen = "";
+    neu.talent = "";
+    neu.sessionBadge = "";
+    neu.gesamtbewertungSession = 0;
     neu.statistiken = {};
     SPIELER.push(neu);
     speichern();
@@ -1241,6 +1258,8 @@ function modalSpielerBearbeiten(id) {
         ${feld("Geburtsdatum *", "geburtsdatum", "date", `required value="${p.geburtsdatum || ""}"`)}
         ${feld("Nationalität", "nationalitaet", "text", `value="${esc(p.nationalitaet || "")}"`)}
         ${feld("Talent-Kategorie", "talent", "text", "", ["", "A", "B", "C"], p.talent || "")}
+        ${feld("Session-Badge", "sessionBadge", "text", "", BADGES.map(b => b.label), (BADGES.find(b => b.label === p.sessionBadge) ? p.sessionBadge : ""))}
+        ${feld("Gesamtbewertung pro Session (1-10)", "gesamtbewertungSession", "number", `min="0" max="10" value="${p.gesamtbewertungSession || 0}"`)}
         ${feld("Verein *", "verein", "text", `required value="${esc(p.verein)}"`)}
         ${feld("Liga", "liga", "text", `value="${esc(p.liga || "")}"`)}
         ${feld("Verband", "verband", "text", `value="${esc(p.verband || "")}"`)}
@@ -1267,6 +1286,8 @@ function modalSpielerBearbeiten(id) {
     p.geburtsdatum = fd.get("geburtsdatum");
     p.nationalitaet = fd.get("nationalitaet") || "Deutschland";
     p.talent = fd.get("talent") || "";
+    p.sessionBadge = fd.get("sessionBadge") || "";
+    p.gesamtbewertungSession = +fd.get("gesamtbewertungSession") || 0;
     p.verein = fd.get("verein");
     p.liga = fd.get("liga") || "";
     p.verband = fd.get("verband") || "";

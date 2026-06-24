@@ -205,6 +205,8 @@ function normalisiereSpieler(p) {
   if (!p.statistiken) p.statistiken = {};
   if (!p.notizen)     p.notizen     = "";
   if (!p.talent)      p.talent      = "";
+  if (!p.sessionBadge) p.sessionBadge = "";
+  if (!p.gesamtbewertungSession) p.gesamtbewertungSession = 0;
   return p;
 }
 
