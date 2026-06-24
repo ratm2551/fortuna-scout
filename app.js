@@ -176,24 +176,24 @@ const BADGES = [
 const FEEDBACK_VORLAGEN = {
   // Gruppe 1: Sehr gut (1-3)
   gruppe1: [
-    "Der Spieler zeigt hervorragende technische Fähigkeiten mit sauberer Ballannahme und präzisem Passspiel. Ein sehr gutes Spielverständnis und schnelle Entscheidungen zeichnen ihn aus. Mit hoher Konzentration und großem Entwicklungspotenzial ist er ein Spieler, der sich deutlich abheben wird.",
-    "Beeindruckende Leistung mit dynamischem Spiel und ausgezeichneter Ballkontrolle. Der Spieler besticht durch schnelle Orientierung im Feld und aktivische Spielbeteiligung. Bereits weit entwickelt für sein Niveau mit enormem Potenzial.",
-    "Der Spieler präsentiert sich mit großer Sicherheit am Ball und trifft passende Entscheidungen. Sein taktisches Verständnis und seine körperliche Präsenz sind bemerkenswert. Ein Spieler mit klarer Entwicklungsperspektive auf hohem Niveau.",
-    "Ausgezeichnete Grundlagen mit sicherer Ballbehandlung und gutem Spielverständnis. Der Spieler arbeitet aktiv mit und zeigt bereits hohe Konzentration über längere Phasen. Großes Potential erkennbar.",
+    "Der Spieler zeigt hervorragende technische Fähigkeiten mit sauberer Ballannahme und präzisem Passspiel. Ein sehr gutes Spielverständnis und schnelle Entscheidungen zeichnen ihn aus. Mit hoher Konzentration und großem Entwicklungspotenzial ist er ein Spieler, der sich deutlich abheben wird. Die körperlichen Voraussetzungen sowie die mentale Einstellung versprechen eine erfolgreiche weitere Entwicklung auf höchstem Niveau.",
+    "Beeindruckende Leistung mit dynamischem Spiel und ausgezeichneter Ballkontrolle. Der Spieler besticht durch schnelle Orientierung im Feld und aktive Spielbeteiligung. Bereits weit entwickelt für sein Niveau mit enormem Potenzial. Die Fähigkeit, Spielsituationen schnell zu erfassen und clever zu reagieren, hebt ihn deutlich von gleichaltrigen Spielern ab.",
+    "Der Spieler präsentiert sich mit großer Sicherheit am Ball und trifft passende Entscheidungen. Sein taktisches Verständnis und seine körperliche Präsenz sind bemerkenswert. Ein Spieler mit klarer Entwicklungsperspektive auf hohem Niveau. Besonders hervorzuheben ist seine mentale Stabilität und die Fähigkeit, unter Druck gute Leistungen zu erbringen.",
+    "Ausgezeichnete Grundlagen mit sicherer Ballbehandlung und gutem Spielverständnis. Der Spieler arbeitet aktiv mit und zeigt bereits hohe Konzentration über längere Phasen. Großes Potential erkennbar. Seine Trainingsleistung und die schnelle Umsetzung von Anweisungen sprechen für eine erfolgreiche Weiterentwicklung in den kommenden Jahren.",
   ],
   // Gruppe 2: Gut / Solide (4-6)
   gruppe2: [
-    "Der Spieler bringt gute Grundfähigkeiten mit und beteiligt sich aktiv am Spiel. Mit sauberer Ballannahme in den meisten Situationen und zuverlässigem Passspiel ist er ein solider Spieler. Mit gezieltem Training sind deutliche Fortschritte zu erwarten.",
-    "Ordentliche Leistung mit erkennbarem Spielverständnis und guter Einsatzbereitschaft. Der Spieler zeigt positive Ansätze und verbessert sich kontinuierlich. Ein Training der Grundlagen bringt sicher weitere Entwicklung.",
-    "Der Spieler verfügt über gute Grundlagen im Umgang mit dem Ball und gute Orientierung im Spiel. Mit solider Ausdauer und Konzentration ist eine weitere Steigerung mit regelmäßigem Training möglich.",
-    "Guter Spieler mit zuverlässigem Passspiel und Grundverständnis für Spielsituationen. Die Entwicklung schreitet voran und mit weiterer Übung sind Verbesserungen in allen Bereichen zu erwarten.",
+    "Der Spieler bringt gute Grundfähigkeiten mit und beteiligt sich aktiv am Spiel. Mit sauberer Ballannahme in den meisten Situationen und zuverlässigem Passspiel ist er ein solider Spieler. Mit gezieltem Training sind deutliche Fortschritte zu erwarten. Sein Engagement und seine Lernfähigkeit deuten darauf hin, dass er mit systematischer Förderung weiter vorankommen wird.",
+    "Ordentliche Leistung mit erkennbarem Spielverständnis und guter Einsatzbereitschaft. Der Spieler zeigt positive Ansätze und verbessert sich kontinuierlich. Ein Training der Grundlagen bringt sicher weitere Entwicklung. Mit speziellem Fokus auf die technische und athletische Verbesserung können wir eine positive Entwicklungskurve erzielen.",
+    "Der Spieler verfügt über gute Grundlagen im Umgang mit dem Ball und gute Orientierung im Spiel. Mit solider Ausdauer und Konzentration ist eine weitere Steigerung mit regelmäßigem Training möglich. Seine Trainingsmotivation ist erkennbar und schafft eine gute Grundlage für seine Weiterentwicklung. Kontinuierliche Unterstützung ist wichtig für seinen Fortschritt.",
+    "Guter Spieler mit zuverlässigem Passspiel und Grundverständnis für Spielsituationen. Die Entwicklung schreitet voran und mit weiterer Übung sind Verbesserungen in allen Bereichen zu erwarten. Seine Bereitschaft, an sich selbst zu arbeiten, ist sehr positiv. Wir sehen gutes Potenzial für eine erfolgreiche Karriereentwicklung.",
   ],
   // Gruppe 3: Im Aufbau / Einstieg (7-10)
   gruppe3: [
-    "Der Spieler zeigt erste positive Ansätze und arbeitet aktiv an seiner Entwicklung. Mit Fokus auf die Grundlagen und kontinuierlichem Training sind gute Fortschritte möglich. Wichtig ist die regelmäßige Unterstützung.",
-    "Erste Fortschritte im Umgang mit dem Ball sind erkennbar. Der Spieler bringt gute Lernbereitschaft mit und nimmt aktiv am Spiel teil. Mit Geduld und gezieltem Training wird die Entwicklung vorangehen.",
-    "Der Spieler entwickelt sich schrittweise und zeigt Einsatzbereitschaft. Die Grundlagen werden aufgebaut und mit Anleitung verbessern sich die Bewegungsabläufe kontinuierlich. Weiterhin wichtig: regelmäßiges Spieltraining.",
-    "Gute Bereitschaft zur Mitarbeit und erste sichere Aktionen sind erkennbar. Das Ballgefühl entwickelt sich und mit kontinuierlicher Förderung sind Verbesserungen zu sehen. Fokus auf Spielpraxis ist sinnvoll.",
+    "Der Spieler zeigt erste positive Ansätze und arbeitet aktiv an seiner Entwicklung. Mit Fokus auf die Grundlagen und kontinuierlichem Training sind gute Fortschritte möglich. Wichtig ist die regelmäßige Unterstützung durch erfahrene Trainer. Ein spezielles Fördertraining wird ihm helfen, seine Fähigkeiten systematisch auszubauen und schneller voranzukommen.",
+    "Erste Fortschritte im Umgang mit dem Ball sind erkennbar. Der Spieler bringt gute Lernbereitschaft mit und nimmt aktiv am Spiel teil. Mit Geduld und gezieltem Training wird die Entwicklung vorangehen. Ein Schwerpunkt-Training mit Fokus auf die technischen Grundlagen wird empfohlen, um die Entwicklung zu beschleunigen.",
+    "Der Spieler entwickelt sich schrittweise und zeigt Einsatzbereitschaft. Die Grundlagen werden aufgebaut und mit Anleitung verbessern sich die Bewegungsabläufe kontinuierlich. Weiterhin wichtig: regelmäßiges Spieltraining. Ein intensives Fördertraining kann helfen, Lücken in der technischen Ausbildung zu schließen und die Entwicklung zu beschleunigen.",
+    "Gute Bereitschaft zur Mitarbeit und erste sichere Aktionen sind erkennbar. Das Ballgefühl entwickelt sich und mit kontinuierlicher Förderung sind Verbesserungen zu sehen. Fokus auf Spielpraxis ist sinnvoll. Ein spezialisiertes Trainingskonzept wird empfohlen, um die Grundlagen zu stabilisieren und die individuelle Entwicklung zu optimieren.",
   ]
 };
 
@@ -1919,15 +1919,16 @@ function feedbackExportieren(id) {
   const badge = p.sessionBadge || "–";
   const bewertung = p.gesamtbewertungSession || 0;
   const datum = HEUTE.toLocaleDateString("de-DE");
+  const [day, month, year] = datum.split(".");
 
   // Feedback-Text mit Call-to-Action je nach Gruppe
-  let feedbackText = feedback;
+  let callToAction = "";
   if (bewertung <= 3 && FEEDBACK_LINKS.bewerbung) {
-    feedbackText += `\n\nDu erfüllst alle Anforderungen für den nächsten Badge! Bewirb dich direkt über diesen Link:\n${FEEDBACK_LINKS.bewerbung}`;
+    callToAction = `Du erfüllst alle Anforderungen für den nächsten Badge! Bewirb dich direkt über diesen Link:<br><a href="${esc(FEEDBACK_LINKS.bewerbung)}">${esc(FEEDBACK_LINKS.bewerbung)}</a>`;
   } else if (bewertung <= 6 && FEEDBACK_LINKS.bewerbung) {
-    feedbackText += `\n\nWir laden dich herzlich zum nächsten Badge ein! Bewirb dich über diesen Link:\n${FEEDBACK_LINKS.bewerbung}`;
+    callToAction = `Wir laden dich herzlich zum nächsten Badge ein! Bewirb dich über diesen Link:<br><a href="${esc(FEEDBACK_LINKS.bewerbung)}">${esc(FEEDBACK_LINKS.bewerbung)}</a>`;
   } else if (bewertung >= 7 && FEEDBACK_LINKS.schwerpunkttraining) {
-    feedbackText += `\n\nWir empfehlen dir unser Schwerpunkt-Training am Sonntag. Dort kannst du gezielt an deinen Stärken und Schwächen arbeiten und dich beim nächsten Vorspielen erneut zeigen!\nMelde dich hier an: ${FEEDBACK_LINKS.schwerpunkttraining}`;
+    callToAction = `Wir empfehlen dir unser Schwerpunkt-Training am Sonntag. Melde dich hier an:<br><a href="${esc(FEEDBACK_LINKS.schwerpunkttraining)}">${esc(FEEDBACK_LINKS.schwerpunkttraining)}</a>`;
   }
 
   const html = `<!DOCTYPE html>
@@ -1935,66 +1936,105 @@ function feedbackExportieren(id) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Feedback ${p.vorname} ${p.nachname}</title>
+  <title>Feedback ${esc(p.vorname)} ${esc(p.nachname)}</title>
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; }
-    .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #d31920; padding-bottom: 20px; }
-    .logo { font-size: 24px; font-weight: bold; color: #d31920; margin-bottom: 10px; }
-    .title { font-size: 18px; font-weight: 600; margin: 15px 0 5px; }
-    .info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-    .info-item { }
-    .info-label { font-weight: 600; color: #666; font-size: 12px; text-transform: uppercase; }
-    .info-value { font-size: 16px; margin-top: 4px; }
-    .feedback { background: #f5f5f5; padding: 20px; border-radius: 8px; line-height: 1.8; margin: 20px 0; }
-    .rating { display: inline-block; background: #d31920; color: white; padding: 8px 12px; border-radius: 4px; font-weight: 600; }
-    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #999; text-align: center; }
+    * { margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; color: #333; background: #fff; }
+    @page { size: A4; margin: 2cm; }
+    @media print { body { margin: 0; padding: 0; } }
+    .page { width: 21cm; height: 29.7cm; margin: 0 auto; padding: 2cm; box-sizing: border-box; background: white; }
+    .briefkopf { border-bottom: 2px solid #d31920; padding-bottom: 20px; margin-bottom: 30px; }
+    .logo { font-size: 22px; font-weight: bold; color: #d31920; }
+    .subtext { font-size: 12px; color: #666; margin-top: 4px; }
+    .datum-betreff { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
+    .datum-box, .betreff-box { }
+    .label { font-size: 11px; color: #999; text-transform: uppercase; font-weight: bold; margin-bottom: 4px; }
+    .wert { font-size: 14px; }
+    .anrede { margin-bottom: 20px; line-height: 1.6; }
+    .feedback-text { line-height: 1.8; margin: 20px 0; text-align: justify; }
+    .footer-text { margin: 20px 0 0; font-size: 12px; line-height: 1.6; }
+    .gruss { margin-top: 30px; }
+    .signature { margin-top: 50px; }
+    a { color: #d31920; text-decoration: underline; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">F95 Fußballschule</div>
-    <div style="font-size: 14px; color: #666;">Fortuna Talent Scout</div>
+  <div class="page">
+    <div class="briefkopf">
+      <div class="logo">F95 Fußballschule</div>
+      <div class="subtext">Fortuna Talent Scout</div>
+    </div>
+
+    <div class="datum-betreff">
+      <div class="datum-box">
+        <div class="label">Datum</div>
+        <div class="wert">${day}.${month}.${year}</div>
+      </div>
+      <div class="betreff-box">
+        <div class="label">Betreff</div>
+        <div class="wert">Feedback: ${esc(p.vorname)} ${esc(p.nachname)} – ${esc(badge)}</div>
+      </div>
+    </div>
+
+    <div class="anrede">
+      Liebe/r ${esc(p.vorname)},
+    </div>
+
+    <div class="feedback-text">
+      <div style="margin-bottom: 15px;">Bewertung: <strong>${bewertung} / 10</strong></div>
+      ${esc(feedback).replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>")}
+    </div>
+
+    ${callToAction ? `<div class="footer-text">${callToAction}</div>` : ""}
+
+    <div class="gruss">
+      Beste Grüße,<br>
+      <div class="signature">_______________<br>F95 Talentscout</div>
+    </div>
   </div>
 
-  <div class="title">Abschlussfeedback ${badge}</div>
-
-  <div class="info">
-    <div class="info-item">
-      <div class="info-label">Spieler</div>
-      <div class="info-value">${esc(p.vorname)} ${esc(p.nachname)}</div>
-    </div>
-    <div class="info-item">
-      <div class="info-label">Bewertung</div>
-      <div class="info-value"><span class="rating">${bewertung} / 10</span></div>
-    </div>
-    <div class="info-item">
-      <div class="info-label">Datum</div>
-      <div class="info-value">${datum}</div>
-    </div>
-    <div class="info-item">
-      <div class="info-label">Session</div>
-      <div class="info-value">${esc(badge)}</div>
-    </div>
-  </div>
-
-  <div class="feedback">
-    ${esc(feedbackText).replace(/\n/g, "<br>")}
-  </div>
-
-  <div class="footer">
-    Fortuna Talent Scout | Generiert am ${datum}
-  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    window.downloadPDF = function() {
+      const element = document.querySelector('.page');
+      const opt = {
+        margin: 0,
+        filename: 'Feedback_${p.vorname}_${p.nachname}_${badge}.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    };
+  </script>
 </body>
 </html>`;
 
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `Feedback_${p.vorname}_${p.nachname}_${badge}.html`;
-  link.click();
-  URL.revokeObjectURL(url);
-  toast("Feedback heruntergeladen. Du kannst es als PDF speichern (Drucken → Speichern als PDF)");
+  zeigeModal(`
+    <h2>Feedback als PDF exportieren</h2>
+    <p>Spieler: <strong>${esc(p.vorname)} ${esc(p.nachname)}</strong></p>
+    <p>Bewertung: <strong>${bewertung} / 10</strong></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+      <button type="button" class="btn" onclick="downloadPDF()">📥 Als PDF herunterladen</button>
+    </div>
+  `);
+
+  window.downloadPDF = () => {
+    if (typeof html2pdf === "undefined") { toast("PDF-Bibliothek wird geladen..."); return; }
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    const element = div.querySelector(".page");
+    const opt = {
+      margin: 0,
+      filename: `Feedback_${p.vorname}_${p.nachname}_${badge}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    };
+    html2pdf().set(opt).from(element).save();
+    schliesseModal();
+  };
 }
 window.feedbackExportieren = feedbackExportieren;
 
