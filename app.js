@@ -133,6 +133,18 @@ function ladeScoreConfig() {
 function speichereScoreConfig() { localStorage.setItem(SCORE_CONFIG_KEY, JSON.stringify(SCORE_CONFIG)); }
 let SCORE_CONFIG = ladeScoreConfig();
 
+function generiererFeedback(bewertung) {
+  if (!bewertung || bewertung < 1 || bewertung > 10) return "";
+  let gruppe;
+  if (bewertung <= 3) gruppe = "gruppe1";
+  else if (bewertung <= 6) gruppe = "gruppe2";
+  else gruppe = "gruppe3";
+
+  const vorlagen = FEEDBACK_VORLAGEN[gruppe] || [];
+  if (!vorlagen.length) return "";
+  return vorlagen[Math.floor(Math.random() * vorlagen.length)];
+}
+
 // ---------- Session-Badges ----------
 const BADGES = [
   { id: 1, label: "Badge 1" },
@@ -144,6 +156,31 @@ const BADGES = [
   { id: 7, label: "Badge 7" },
   { id: 8, label: "Badge 8" },
 ];
+
+// ---------- Feedback-Vorlagen (nach Bewertung 1-10) ----------
+const FEEDBACK_VORLAGEN = {
+  // Gruppe 1: Sehr gut (1-3)
+  gruppe1: [
+    "Der Spieler zeigt hervorragende technische Fähigkeiten mit sauberer Ballannahme und präzisem Passspiel. Ein sehr gutes Spielverständnis und schnelle Entscheidungen zeichnen ihn aus. Mit hoher Konzentration und großem Entwicklungspotenzial ist er ein Spieler, der sich deutlich abheben wird.",
+    "Beeindruckende Leistung mit dynamischem Spiel und ausgezeichneter Ballkontrolle. Der Spieler besticht durch schnelle Orientierung im Feld und aktivische Spielbeteiligung. Bereits weit entwickelt für sein Niveau mit enormem Potenzial.",
+    "Der Spieler präsentiert sich mit großer Sicherheit am Ball und trifft passende Entscheidungen. Sein taktisches Verständnis und seine körperliche Präsenz sind bemerkenswert. Ein Spieler mit klarer Entwicklungsperspektive auf hohem Niveau.",
+    "Ausgezeichnete Grundlagen mit sicherer Ballbehandlung und gutem Spielverständnis. Der Spieler arbeitet aktiv mit und zeigt bereits hohe Konzentration über längere Phasen. Großes Potential erkennbar.",
+  ],
+  // Gruppe 2: Gut / Solide (4-6)
+  gruppe2: [
+    "Der Spieler bringt gute Grundfähigkeiten mit und beteiligt sich aktiv am Spiel. Mit sauberer Ballannahme in den meisten Situationen und zuverlässigem Passspiel ist er ein solider Spieler. Mit gezieltem Training sind deutliche Fortschritte zu erwarten.",
+    "Ordentliche Leistung mit erkennbarem Spielverständnis und guter Einsatzbereitschaft. Der Spieler zeigt positive Ansätze und verbessert sich kontinuierlich. Ein Training der Grundlagen bringt sicher weitere Entwicklung.",
+    "Der Spieler verfügt über gute Grundlagen im Umgang mit dem Ball und gute Orientierung im Spiel. Mit solider Ausdauer und Konzentration ist eine weitere Steigerung mit regelmäßigem Training möglich.",
+    "Guter Spieler mit zuverlässigem Passspiel und Grundverständnis für Spielsituationen. Die Entwicklung schreitet voran und mit weiterer Übung sind Verbesserungen in allen Bereichen zu erwarten.",
+  ],
+  // Gruppe 3: Im Aufbau / Einstieg (7-10)
+  gruppe3: [
+    "Der Spieler zeigt erste positive Ansätze und arbeitet aktiv an seiner Entwicklung. Mit Fokus auf die Grundlagen und kontinuierlichem Training sind gute Fortschritte möglich. Wichtig ist die regelmäßige Unterstützung.",
+    "Erste Fortschritte im Umgang mit dem Ball sind erkennbar. Der Spieler bringt gute Lernbereitschaft mit und nimmt aktiv am Spiel teil. Mit Geduld und gezieltem Training wird die Entwicklung vorangehen.",
+    "Der Spieler entwickelt sich schrittweise und zeigt Einsatzbereitschaft. Die Grundlagen werden aufgebaut und mit Anleitung verbessern sich die Bewegungsabläufe kontinuierlich. Weiterhin wichtig: regelmäßiges Spieltraining.",
+    "Gute Bereitschaft zur Mitarbeit und erste sichere Aktionen sind erkennbar. Das Ballgefühl entwickelt sich und mit kontinuierlicher Förderung sind Verbesserungen zu sehen. Fokus auf Spielpraxis ist sinnvoll.",
+  ]
+};
 
 // ---------- Berechtigungen ----------
 const BERECHTIGUNGEN_KEY = "fortuna-berechtigungen-v1";
@@ -541,6 +578,7 @@ function viewSpielerDetail(id, tab) {
           </select>
           ${hatRecht("spieler_bearbeiten") ? `<button class="btn btn-ghost btn-sm" onclick="modalSpielerBearbeiten('${p.id}')">✏️ Bearbeiten</button>` : ""}
           ${hatRecht("spieler_loeschen") ? `<button class="btn btn-ghost btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="spielerLoeschen('${p.id}')">🗑 Löschen</button>` : ""}
+          ${p.gesamtbewertungSession ? `<button class="btn btn-sm" style="background:#4f46e5;border-color:#4f46e5;color:#fff" onclick="feedbackExportieren('${p.id}')">📄 Feedback-PDF</button>` : ""}
         </div>
       </div>
       <div class="scores-row">
@@ -1824,6 +1862,83 @@ function datenbankLoeschenBestaetigt() {
   renderAdminTab();
 }
 window.datenbankLoeschenBestaetigt = datenbankLoeschenBestaetigt;
+
+// ---------- Feedback-Export ----------
+function feedbackExportieren(id) {
+  const p = findSpieler(id);
+  if (!p || !p.gesamtbewertungSession) { toast("Keine Bewertung hinterlegt."); return; }
+  const feedback = generiererFeedback(p.gesamtbewertungSession);
+  const badge = p.sessionBadge || "–";
+  const bewertung = p.gesamtbewertungSession || 0;
+  const datum = HEUTE.toLocaleDateString("de-DE");
+
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feedback ${p.vorname} ${p.nachname}</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; }
+    .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #d31920; padding-bottom: 20px; }
+    .logo { font-size: 24px; font-weight: bold; color: #d31920; margin-bottom: 10px; }
+    .title { font-size: 18px; font-weight: 600; margin: 15px 0 5px; }
+    .info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .info-item { }
+    .info-label { font-weight: 600; color: #666; font-size: 12px; text-transform: uppercase; }
+    .info-value { font-size: 16px; margin-top: 4px; }
+    .feedback { background: #f5f5f5; padding: 20px; border-radius: 8px; line-height: 1.8; margin: 20px 0; }
+    .rating { display: inline-block; background: #d31920; color: white; padding: 8px 12px; border-radius: 4px; font-weight: 600; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #999; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">F95 Fußballschule</div>
+    <div style="font-size: 14px; color: #666;">Fortuna Talent Scout</div>
+  </div>
+
+  <div class="title">Abschlussfeedback ${badge}</div>
+
+  <div class="info">
+    <div class="info-item">
+      <div class="info-label">Spieler</div>
+      <div class="info-value">${esc(p.vorname)} ${esc(p.nachname)}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Bewertung</div>
+      <div class="info-value"><span class="rating">${bewertung} / 10</span></div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Datum</div>
+      <div class="info-value">${datum}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Session</div>
+      <div class="info-value">${esc(badge)}</div>
+    </div>
+  </div>
+
+  <div class="feedback">
+    ${esc(feedback)}
+  </div>
+
+  <div class="footer">
+    Fortuna Talent Scout | Generiert am ${datum}
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `Feedback_${p.vorname}_${p.nachname}_${badge}.html`;
+  link.click();
+  URL.revokeObjectURL(url);
+  toast("Feedback heruntergeladen. Du kannst es als PDF speichern (Drucken → Speichern als PDF)");
+}
+window.feedbackExportieren = feedbackExportieren;
 
 function berechtigungenZuruecksetzen() {
   BERECHTIGUNGEN = JSON.parse(JSON.stringify(DEFAULT_BERECHTIGUNGEN));
