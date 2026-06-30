@@ -832,29 +832,6 @@ function tabSpielpositionenAnzeige(p) {
     </div>
   `;
 }
-          </div>
-          <div style="font-size: 12px; color: var(--muted); margin-bottom: 12px">
-            Feldposition: <strong>${p.feldposition ? FELDPOSITIONEN[p.feldposition].name : "–"}</strong>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom: 16px">
-      <h3>Rollen (${rollen.length})</h3>
-      <div style="display: grid; gap: 8px">
-        ${rollenHtml}
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom: 16px">
-      <h3>Kernkompetenzen (Radar-Chart)</h3>
-      ${renderRadarChart(p)}
-    </div>
-
-    ${tabellenHtml}
-  `;
-}
 
 function renderRadarChart(p) {
   const modell = getRatingModell(p);
