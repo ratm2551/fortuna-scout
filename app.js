@@ -2340,29 +2340,33 @@ function csvVerarbeitenUndPreview(text) {
   let warnung = "";
   if (duplikate.length > 0) {
     warnung = `<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:12px;margin-bottom:16px;color:#856404;font-size:12px">
-      ⚠️ <strong>${duplikate.length} Spieler existieren bereits</strong> und werden übersprungen: ${duplikate.map(d => \`<strong>\${esc(d.vorname)} \${esc(d.nachname)}</strong>\`).join(", ")}
+      ⚠️ <strong>${duplikate.length} Spieler existieren bereits</strong> und werden übersprungen: ${duplikate.map(d => `<strong>${esc(d.vorname)} ${esc(d.nachname)}</strong>`).join(", ")}
     </div>`;
   }
   const importCount = neu.length;
+  let tabelle = "";
+  if (importCount > 0) {
+    tabelle = `<div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+      <table style="font-size:12.5px;min-width:500px">
+        <thead><tr><th>Vorname</th><th>Nachname</th><th>Position</th><th>Verein</th><th>Liga</th><th>Pool</th></tr></thead>
+        <tbody>${neu.slice(0, 5).map(c => `<tr>
+          <td>${esc(c.vorname)}</td><td>${esc(c.nachname)}</td>
+          <td>${esc(c.hauptposition||"–")}</td><td>${esc(c.verein||"–")}</td>
+          <td>${esc(c.liga||"–")}</td><td>${esc(c.pool||"–")}</td>
+        </tr>`).join("")}
+        ${neu.length > 5 ? `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:8px">… und ${neu.length - 5} weitere</td></tr>` : ""}
+        </tbody>
+      </table>
+    </div>`;
+  }
   root.innerHTML = `<div class="modal-backdrop"><div class="modal" style="max-width:720px;width:95vw">
     <h2>CSV-Import · ${kandidaten.length} Spieler erkannt</h2>
     ${warnung}
-    <p style="color:var(--muted);font-size:13px;margin:8px 0 16px">${importCount === 0 ? "Alle Spieler existieren bereits!" : \`Es werden \${importCount} neue Spieler importiert. Vorschau der ersten 5 Zeilen:\`}</p>
-    ${importCount > 0 ? \`<div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
-      <table style="font-size:12.5px;min-width:500px">
-        <thead><tr><th>Vorname</th><th>Nachname</th><th>Position</th><th>Verein</th><th>Liga</th><th>Pool</th></tr></thead>
-        <tbody>\${neu.slice(0, 5).map(c => \`<tr>
-          <td>\${esc(c.vorname)}</td><td>\${esc(c.nachname)}</td>
-          <td>\${esc(c.hauptposition||"–")}</td><td>\${esc(c.verein||"–")}</td>
-          <td>\${esc(c.liga||"–")}</td><td>\${esc(c.pool||"–")}</td>
-        </tr>\`).join("")}
-        \${neu.length > 5 ? \`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:8px">… und \${neu.length - 5} weitere</td></tr>\` : ""}
-        </tbody>
-      </table>
-    </div>\` : ""}
+    <p style="color:var(--muted);font-size:13px;margin:8px 0 16px">${importCount === 0 ? "Alle Spieler existieren bereits!" : `Es werden ${importCount} neue Spieler importiert. Vorschau der ersten 5 Zeilen:`}</p>
+    ${tabelle}
     <div class="modal-actions" style="margin-top:18px">
       <button class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
-      <button class="btn" onclick="csvImportBestaetigen()" ${importCount === 0 ? "disabled" : ""}>✓ \${importCount > 0 ? \`\${importCount} Spieler importieren\` : "Keine neuen Spieler"}</button>
+      <button class="btn" onclick="csvImportBestaetigen()" ${importCount === 0 ? "disabled" : ""}>✓ ${importCount > 0 ? `${importCount} Spieler importieren` : "Keine neuen Spieler"}</button>
     </div>
   </div></div>`;
   $(".modal-backdrop").addEventListener("click", e => { if (e.target.classList.contains("modal-backdrop")) schliesseModal(); });
