@@ -1226,13 +1226,17 @@ function initFeldpositionDragDrop(spielerId) {
   const vbHeight = parseFloat(viewBox[3]);
 
   svg.addEventListener("mousedown", (e) => {
-    if (e.target.tagName === "circle" && !e.target.getAttribute("id").includes("50%")) {
-      draggedCircle = e.target;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-      draggedCircle.style.cursor = "grabbing";
-      draggedCircle.style.filter = "brightness(1.2)";
-      e.preventDefault();
+    if (e.target.tagName === "circle") {
+      const id = e.target.getAttribute("id") || "";
+      // Nur Position-Kreise draggbar (ID beginnt mit "pos-")
+      if (id.startsWith("pos-")) {
+        draggedCircle = e.target;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        draggedCircle.style.cursor = "grabbing";
+        draggedCircle.style.filter = "brightness(1.2)";
+        e.preventDefault();
+      }
     }
   });
 
