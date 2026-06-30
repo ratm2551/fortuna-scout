@@ -172,28 +172,28 @@ const BADGES = [
   { id: 8, label: "Badge 8" },
 ];
 
-// ---------- Feedback-Vorlagen (nach Bewertung 1-10) ----------
+// ---------- Feedback-Vorlagen (nach Bewertung 1-10, "Du"-Anrede) ----------
 const FEEDBACK_VORLAGEN = {
   // Gruppe 1: Sehr gut (1-3)
   gruppe1: [
-    "Der Spieler zeigt hervorragende technische Fähigkeiten mit sauberer Ballannahme und präzisem Passspiel. Ein sehr gutes Spielverständnis und schnelle Entscheidungen zeichnen ihn aus. Mit hoher Konzentration und großem Entwicklungspotenzial ist er ein Spieler, der sich deutlich abheben wird. Die körperlichen Voraussetzungen sowie die mentale Einstellung versprechen eine erfolgreiche weitere Entwicklung auf höchstem Niveau. Wir sind sehr optimistisch hinsichtlich seiner Karrierechancen und freuen uns auf die weitere Zusammenarbeit.",
-    "Beeindruckende Leistung mit dynamischem Spiel und ausgezeichneter Ballkontrolle. Der Spieler besticht durch schnelle Orientierung im Feld und aktive Spielbeteiligung. Bereits weit entwickelt für sein Niveau mit enormem Potenzial. Die Fähigkeit, Spielsituationen schnell zu erfassen und clever zu reagieren, hebt ihn deutlich von gleichaltrigen Spielern ab. Seine Konstanz und sein Selbstbewusstsein sind besonders beeindruckend.",
-    "Der Spieler präsentiert sich mit großer Sicherheit am Ball und trifft passende Entscheidungen. Sein taktisches Verständnis und seine körperliche Präsenz sind bemerkenswert. Ein Spieler mit klarer Entwicklungsperspektive auf hohem Niveau. Besonders hervorzuheben ist seine mentale Stabilität und die Fähigkeit, unter Druck gute Leistungen zu erbringen. Seine Trainingsleistung deutet auf einen sehr seriösen Umgang mit der Chance hin.",
-    "Ausgezeichnete Grundlagen mit sicherer Ballbehandlung und gutem Spielverständnis. Der Spieler arbeitet aktiv mit und zeigt bereits hohe Konzentration über längere Phasen. Großes Potential erkennbar. Seine Trainingsleistung und die schnelle Umsetzung von Anweisungen sprechen für eine erfolgreiche Weiterentwicklung in den kommenden Jahren. Wir sehen in ihm einen Spieler mit Potential für höhere Ebenen.",
+    "Du zeigst hervorragende technische Fähigkeiten mit sauberer Ballannahme und präzisem Passspiel. Dein sehr gutes Spielverständnis und deine schnellen Entscheidungen zeichnen dich aus. Mit deiner hohen Konzentration und großem Entwicklungspotenzial bist du ein Spieler, der sich deutlich abheben wird.\n\nDeine körperlichen Voraussetzungen sowie deine mentale Einstellung versprechen eine erfolgreiche weitere Entwicklung auf höchstem Niveau. Du zeigst bereits in deinem Alter ein Verständnis für das Spiel, das sonst älteren Spielern vorbehalten ist. Deine Trainingsleistung ist konstant gut und du setzt Anweisungen schnell um.\n\nWir sind sehr optimistisch hinsichtlich deiner Karrierechancen und freuen uns auf die weitere Zusammenarbeit mit dir. Du hast das Potenzial, in deiner Fußballer-Karriere weit zu kommen, wenn du weiterhin so engagiert trainierst.",
+    "Du zeigst eine beeindruckende Leistung mit dynamischem Spiel und ausgezeichneter Ballkontrolle. Du bestichst durch schnelle Orientierung im Feld und aktive Spielbeteiligung. Bereits für dein Niveau weit entwickelt, erkenne ich enormes Potenzial in deinem Spiel.\n\nDeine Fähigkeit, Spielsituationen schnell zu erfassen und clever zu reagieren, hebt dich deutlich von gleichaltrigen Spielern ab. Deine Konstanz und dein Selbstbewusstsein sind besonders beeindruckend. Du spielst mit einer Sicherheit am Ball, die zeigt, dass du wirklich Spaß am Fußball hast.\n\nMach weiter so! Deine Entwicklung ist bemerkenswert und du bist auf einem sehr guten Weg. Mit dieser Einstellung und diesem Engagement wirst du noch viel erreichen.",
+    "Du präsentierst dich mit großer Sicherheit am Ball und triffst passende Entscheidungen. Dein taktisches Verständnis und deine körperliche Präsenz sind bemerkenswert. Du bist ein Spieler mit klarer Entwicklungsperspektive auf hohem Niveau.\n\nBesonders hervorzuheben ist deine mentale Stabilität und deine Fähigkeit, unter Druck gute Leistungen zu erbringen. Du behältst auch in schwierigen Situationen den Überblick und spielst clever. Deine Trainingsleistung deutet auf einen sehr seriösen Umgang mit der Chance hin.\n\nDu hast großes Potenzial – nutze es! Arbeite weiterhin an deinen Stärken und bau dich systematisch auf. Du bist auf dem richtigen Weg.",
+    "Du bringst ausgezeichnete Grundlagen mit einer sicheren Ballbehandlung und gutem Spielverständnis. Du arbeitest aktiv mit und zeigst bereits hohe Konzentration über längere Phasen. Dein großes Potenzial ist deutlich erkennbar.\n\nDeine Trainingsleistung und die schnelle Umsetzung von Anweisungen sprechen für eine erfolgreiche Weiterentwicklung in den kommenden Jahren. Du lernst schnell dazu und stellst dich neuen Herausforderungen. Dein Engagement ist genau das, was dich unterscheidet.\n\nWir sehen in dir einen Spieler mit Potenzial für höhere Ebenen. Vertrau auf deine Fähigkeiten und traue dir selbst zu, noch besser zu werden. Du schaffst das!",
   ],
   // Gruppe 2: Gut / Solide (4-6)
   gruppe2: [
-    "Der Spieler bringt gute Grundfähigkeiten mit und beteiligt sich aktiv am Spiel. Mit sauberer Ballannahme in den meisten Situationen und zuverlässigem Passspiel ist er ein solider Spieler. Mit gezieltem Training sind deutliche Fortschritte zu erwarten. Sein Engagement und seine Lernfähigkeit deuten darauf hin, dass er mit systematischer Förderung weiter vorankommen wird. Wir sehen gutes Potential für eine positive Entwicklung.",
-    "Ordentliche Leistung mit erkennbarem Spielverständnis und guter Einsatzbereitschaft. Der Spieler zeigt positive Ansätze und verbessert sich kontinuierlich. Ein Training der Grundlagen bringt sicher weitere Entwicklung. Mit speziellem Fokus auf die technische und athletische Verbesserung können wir eine positive Entwicklungskurve erzielen. Sein Engagement beim Training ist sehr ermutigend.",
-    "Der Spieler verfügt über gute Grundlagen im Umgang mit dem Ball und gute Orientierung im Spiel. Mit solider Ausdauer und Konzentration ist eine weitere Steigerung mit regelmäßigem Training möglich. Seine Trainingsmotivation ist erkennbar und schafft eine gute Grundlage für seine Weiterentwicklung. Kontinuierliche Unterstützung ist wichtig für seinen Fortschritt. Mit gezieltem Training kann er deutlich vorankommen.",
-    "Guter Spieler mit zuverlässigem Passspiel und Grundverständnis für Spielsituationen. Die Entwicklung schreitet voran und mit weiterer Übung sind Verbesserungen in allen Bereichen zu erwarten. Seine Bereitschaft, an sich selbst zu arbeiten, ist sehr positiv. Wir sehen gutes Potenzial für eine erfolgreiche Karriereentwicklung. Regelmäßiges Training ist der Schlüssel für seinen weiteren Aufstieg.",
+    "Du bringst gute Grundfähigkeiten mit und beteiligst dich aktiv am Spiel. Mit deiner sauberen Ballannahme in den meisten Situationen und deinem zuverlässigen Passspiel bist du ein solider Spieler. Mit gezieltem Training sind deutliche Fortschritte für dich zu erwarten.\n\nDein Engagement und deine Lernfähigkeit deuten darauf hin, dass du mit systematischer Förderung weiter vorankommen wirst. Du packst die Chancen an, die man dir gibt. Deine Bereitschaft, dich verbessern zu wollen, ist sehr positiv.\n\nWir sehen gutes Potenzial für deine weitere Entwicklung. Arbeite kontinuierlich an deinen Grundlagen und bleibe geduldig. Mit regelmäßigem Training wirst du merken, wie du immer besser wirst.",
+    "Du zeigst eine ordentliche Leistung mit erkennbarem Spielverständnis und guter Einsatzbereitschaft. Du zeigst positive Ansätze und verbesserst dich kontinuierlich. Ein Training der Grundlagen bringt dir sicher weitere Entwicklung.\n\nMit speziellem Fokus auf die technische und athletische Verbesserung können wir gemeinsam eine positive Entwicklungskurve für dich erreichen. Du hast das Potenzial, deutlich besser zu werden, wenn du es konsequent trainierst. Dein Engagement beim Training ist sehr ermutigend.\n\nFokussiere dich auf deine Stärken und arbeite gezielt an deinen Schwächen. Du bist auf einem guten Weg – bleib dran!",
+    "Du verfügst über gute Grundlagen im Umgang mit dem Ball und hast eine gute Orientierung im Spiel. Mit deiner soliden Ausdauer und Konzentration ist eine weitere Steigerung mit regelmäßigem Training möglich. Deine Trainingsmotivation ist erkennbar und schafft eine gute Grundlage für deine Weiterentwicklung.\n\nKontinuierliche Unterstützung ist wichtig für deinen Fortschritt. Lass dich nicht von Rückschlägen entmutigen – sie sind Teil des Lernprozesses. Du machst gute Fortschritte, manchmal merkst du das nur nicht sofort.\n\nMit gezieltem Training an den richtigen Aspekten deines Spiels kann du deutlich vorankommen. Wir glauben an dich!",
+    "Du bist ein guter Spieler mit zuverlässigem Passspiel und gutem Grundverständnis für Spielsituationen. Deine Entwicklung schreitet voran und mit weiterer Übung sind Verbesserungen in allen Bereichen zu erwarten. Deine Bereitschaft, an dir selbst zu arbeiten, ist sehr positiv.\n\nDu stellst dich den Herausforderungen und fragst, wenn du etwas nicht verstehst. Das sind die Spieler, die sich am schnellsten entwickeln. Vertrau auf deinen Lernprozess und hab Geduld mit dir selbst.\n\nWir sehen gutes Potenzial für deine weitere Fußballer-Karriere. Regelmäßiges Training ist der Schlüssel für deinen weiteren Aufstieg. Mach weiter so!",
   ],
   // Gruppe 3: Im Aufbau / Einstieg (7-10)
   gruppe3: [
-    "Der Spieler zeigt erste positive Ansätze und arbeitet aktiv an seiner Entwicklung. Mit Fokus auf die Grundlagen und kontinuierlichem Training sind gute Fortschritte möglich. Wichtig ist die regelmäßige Unterstützung durch erfahrene Trainer. Ein spezielles Fördertraining wird ihm helfen, seine Fähigkeiten systematisch auszubauen und schneller voranzukommen. Sein Engagement ist ein gutes Zeichen für die weitere Zusammenarbeit.",
-    "Erste Fortschritte im Umgang mit dem Ball sind erkennbar. Der Spieler bringt gute Lernbereitschaft mit und nimmt aktiv am Spiel teil. Mit Geduld und gezieltem Training wird die Entwicklung vorangehen. Ein Schwerpunkt-Training mit Fokus auf die technischen Grundlagen wird empfohlen, um die Entwicklung zu beschleunigen. Die Bereitschaft, zu lernen, ist wichtiger als das aktuelle Niveau.",
-    "Der Spieler entwickelt sich schrittweise und zeigt Einsatzbereitschaft. Die Grundlagen werden aufgebaut und mit Anleitung verbessern sich die Bewegungsabläufe kontinuierlich. Weiterhin wichtig: regelmäßiges Spieltraining. Ein intensives Fördertraining kann helfen, Lücken in der technischen Ausbildung zu schließen und die Entwicklung zu beschleunigen. Geduld und Konstanz werden belohnt.",
-    "Gute Bereitschaft zur Mitarbeit und erste sichere Aktionen sind erkennbar. Das Ballgefühl entwickelt sich und mit kontinuierlicher Förderung sind Verbesserungen zu sehen. Fokus auf Spielpraxis ist sinnvoll. Ein spezialisiertes Trainingskonzept wird empfohlen, um die Grundlagen zu stabilisieren und die individuelle Entwicklung zu optimieren. Mit regelmäßigem Training wird Fortschritt entstehen.",
+    "Du zeigst erste positive Ansätze und arbeitest aktiv an deiner Entwicklung. Mit deinem Fokus auf die Grundlagen und kontinuierlichem Training sind gute Fortschritte für dich möglich. Die regelmäßige Unterstützung durch erfahrene Trainer wird dir helfen.\n\nEin spezielles Fördertraining wird dir helfen, deine Fähigkeiten systematisch auszubauen und schneller voranzukommen. Du fängst jetzt an, die Basics zu lernen – das ist genau der richtige Zeitpunkt. Mit jedem Training wirst du besser, auch wenn die Fortschritte klein sind.\n\nDein Engagement ist ein gutes Zeichen für die weitere Zusammenarbeit. Bleib geduldig mit dir selbst und vergiss nicht, dass jeder große Spieler mal klein angefangen hat. Du wirst sehen, wie du dich entwickelst!",
+    "Du zeigst erste Fortschritte im Umgang mit dem Ball. Deine gute Lernbereitschaft und deine aktive Teilnahme am Spiel sind wertvoll. Mit Geduld und gezieltem Training wird deine Entwicklung vorangehen. Du machst genau das Richtige, wenn du fragst und zuhörst.\n\nEin Schwerpunkt-Training mit Fokus auf die technischen Grundlagen wird dir empfohlen, um deine Entwicklung zu beschleunigen. Dort kannst du gezielt an den Basics arbeiten und dich mit anderen Spielern austauschen. Die Bereitschaft, zu lernen, ist wichtiger als dein jetziges Niveau.\n\nDu hast alles, was du brauchst um besser zu werden: Engagement und die Bereitschaft, dich anzustrengen. Das ist schon sehr viel wert!",
+    "Du entwickelst dich schrittweise und zeigst Einsatzbereitschaft. Die Grundlagen werden aufgebaut und mit Anleitung verbessern sich deine Bewegungsabläufe kontinuierlich. Weiterhin wichtig für dich: regelmäßiges Spieltraining.\n\nEin intensives Fördertraining kann dir helfen, Lücken in deiner technischen Ausbildung zu schließen und deine Entwicklung zu beschleunigen. Du brauchst Zeit – das ist völlig normal in deinem Alter. Jedes Kidz-Training bringt dich näher an dein Ziel.\n\nGeduld und Konstanz werden belohnt. Wenn du regelmäßig trainierst und dran bleibst, wirst du merken, wie du besser wirst. Wir sind da, um dich zu unterstützen!",
+    "Du zeigst gute Bereitschaft zur Mitarbeit und erste sichere Aktionen sind erkennbar. Dein Ballgefühl entwickelt sich und mit kontinuierlicher Förderung sind Verbesserungen sichtbar. Der Fokus auf Spielpraxis ist für dich genau richtig.\n\nEin spezialisiertes Trainingskonzept wird dir empfohlen, um deine Grundlagen zu stabilisieren und deine individuelle Entwicklung zu optimieren. Jeder Spieler lernt in seinem eigenen Tempo – bei dir ist das ok so. Die Hauptsache ist, dass du immer wieder kommst und trainierst.\n\nMit regelmäßigem Training wirst du Fortschritt erkennen. Vertrau dem Prozess und bleib dabei!",
   ]
 };
 
@@ -1997,13 +1997,39 @@ function feedbackExportieren(id) {
 </body>
 </html>`;
 
+  // Feedback-Text für Zwischenablage vorbereiten
+  const feedbackRohtext = `Betreff: Feedback – ${p.vorname} ${p.nachname} – ${badge}
+
+Liebe/r ${p.vorname},
+
+${feedback}
+
+Bewertung: ${bewertung} / 10
+
+${callToAction ? callToAction.replace(/<br>/g, "\n").replace(/<[^>]+>/g, "") : ""}
+
+Beste Grüße,
+
+
+F95 Talentscout`;
+
   zeigeModal(`
-    <h2>Feedback als PDF exportieren</h2>
-    <p>Spieler: <strong>${esc(p.vorname)} ${esc(p.nachname)}</strong></p>
-    <p>Bewertung: <strong>${bewertung} / 10</strong></p>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
-      <button type="button" class="btn" onclick="downloadPDF()">📥 Als PDF herunterladen</button>
+    <h2>Feedback exportieren</h2>
+    <div style="display:flex;gap:12px;margin-bottom:16px">
+      <input type="text" id="feedbackPlayer" value="${esc(p.vorname)} ${esc(p.nachname)}" style="flex:1" readonly>
+      <button class="btn btn-secondary" onclick="document.getElementById('feedbackPlayer').select();document.execCommand('copy');toast('Spielername kopiert')">📋 Kopieren</button>
+    </div>
+
+    <h3 style="font-size:13px;margin:16px 0 8px;font-weight:bold">Feedback-Text (kopierbar):</h3>
+    <textarea id="feedbackText" style="width:100%;height:300px;font-family:monospace;font-size:11px;padding:12px;border:1px solid var(--border);border-radius:6px;resize:vertical" readonly>${esc(feedbackRohtext)}</textarea>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" onclick="document.getElementById('feedbackText').select();document.execCommand('copy');toast('✓ Feedback-Text kopiert')">📋 Text kopieren</button>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button type="button" class="btn btn-secondary" onclick="schliesseModal()">Schließen</button>
+      <button type="button" class="btn" onclick="downloadPDF()">📥 Auch als PDF herunterladen</button>
     </div>
   `);
 
@@ -2297,27 +2323,49 @@ function csvVerarbeitenUndPreview(text) {
     return obj;
   }).filter(o => o.vorname && o.nachname);
   if (!kandidaten.length) { toast("Keine gültigen Zeilen gefunden."); return; }
-  _csvKandidaten = kandidaten;
+  // Doppelte Spieler erkennen
+  const duplikate = [];
+  const neu = [];
+  for (const k of kandidaten) {
+    const exists = SPIELER.find(p =>
+      p.vorname.toLowerCase() === k.vorname.toLowerCase() &&
+      p.nachname.toLowerCase() === k.nachname.toLowerCase()
+    );
+    if (exists) {
+      duplikate.push(k);
+    } else {
+      neu.push(k);
+    }
+  }
+  _csvKandidaten = neu;
 
   const root = $("#modal-root");
+  let warnung = "";
+  if (duplikate.length > 0) {
+    warnung = `<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:12px;margin-bottom:16px;color:#856404;font-size:12px">
+      ⚠️ <strong>${duplikate.length} Spieler existieren bereits</strong> und werden übersprungen: ${duplikate.map(d => \`<strong>\${esc(d.vorname)} \${esc(d.nachname)}</strong>\`).join(", ")}
+    </div>`;
+  }
+  const importCount = neu.length;
   root.innerHTML = `<div class="modal-backdrop"><div class="modal" style="max-width:720px;width:95vw">
     <h2>CSV-Import · ${kandidaten.length} Spieler erkannt</h2>
-    <p style="color:var(--muted);font-size:13px;margin:8px 0 16px">Vorschau der ersten 5 Zeilen. Spieler mit bereits vorhandenem Namen werden übersprungen.</p>
-    <div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+    ${warnung}
+    <p style="color:var(--muted);font-size:13px;margin:8px 0 16px">${importCount === 0 ? "Alle Spieler existieren bereits!" : \`Es werden \${importCount} neue Spieler importiert. Vorschau der ersten 5 Zeilen:\`}</p>
+    ${importCount > 0 ? \`<div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
       <table style="font-size:12.5px;min-width:500px">
         <thead><tr><th>Vorname</th><th>Nachname</th><th>Position</th><th>Verein</th><th>Liga</th><th>Pool</th></tr></thead>
-        <tbody>${kandidaten.slice(0, 5).map(c => `<tr>
-          <td>${esc(c.vorname)}</td><td>${esc(c.nachname)}</td>
-          <td>${esc(c.hauptposition||"–")}</td><td>${esc(c.verein||"–")}</td>
-          <td>${esc(c.liga||"–")}</td><td>${esc(c.pool||"–")}</td>
-        </tr>`).join("")}
-        ${kandidaten.length > 5 ? `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:8px">… und ${kandidaten.length - 5} weitere</td></tr>` : ""}
+        <tbody>\${neu.slice(0, 5).map(c => \`<tr>
+          <td>\${esc(c.vorname)}</td><td>\${esc(c.nachname)}</td>
+          <td>\${esc(c.hauptposition||"–")}</td><td>\${esc(c.verein||"–")}</td>
+          <td>\${esc(c.liga||"–")}</td><td>\${esc(c.pool||"–")}</td>
+        </tr>\`).join("")}
+        \${neu.length > 5 ? \`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:8px">… und \${neu.length - 5} weitere</td></tr>\` : ""}
         </tbody>
       </table>
-    </div>
+    </div>\` : ""}
     <div class="modal-actions" style="margin-top:18px">
       <button class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
-      <button class="btn" onclick="csvImportBestaetigen()">✓ ${kandidaten.length} Spieler importieren</button>
+      <button class="btn" onclick="csvImportBestaetigen()" ${importCount === 0 ? "disabled" : ""}>✓ \${importCount > 0 ? \`\${importCount} Spieler importieren\` : "Keine neuen Spieler"}</button>
     </div>
   </div></div>`;
   $(".modal-backdrop").addEventListener("click", e => { if (e.target.classList.contains("modal-backdrop")) schliesseModal(); });
