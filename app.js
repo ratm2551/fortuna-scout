@@ -38,17 +38,37 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+// ---------- Rating-Modell-Auswahl ----------
+function getRatingModell(p) {
+  if (!p.hauptposition) return RATING_MODELL_FELDSPIELER;
+  return p.hauptposition === "Torwart" ? RATING_MODELL_TORWART : RATING_MODELL_FELDSPIELER;
+}
+
 // ---------- Scores ----------
 function gruppenSchnitt(p, gruppe) {
-  const keys = Object.keys(RATING_MODELL[gruppe].attribute);
+  const modell = getRatingModell(p);
+  if (!modell[gruppe]) return 0;
+  const keys = Object.keys(modell[gruppe].attribute);
   const sum = keys.reduce((s, k) => s + (p.ratings[k] || 0), 0);
   return sum / keys.length;
 }
 function gesamtScore(p) {
-  const g = ["technik", "taktik", "athletik", "mentalitaet"].map(x => gruppenSchnitt(p, x));
-  return Math.round((g.reduce((a, b) => a + b, 0) / g.length) * 10);
+  const modell = getRatingModell(p);
+  const gruppen = Object.keys(modell).filter(k => k !== "potenzial");
+  const g = gruppen.map(x => gruppenSchnitt(p, x));
+  return g.length ? Math.round((g.reduce((a, b) => a + b, 0) / g.length) * 10) : 0;
 }
-function potenzialScore(p) { return Math.round(gruppenSchnitt(p, "potenzial") * 10); }
+function potenzialScore(p) {
+  // Vereinfachter Potenzial-Score basierend auf durchschnittlichem Rating
+  const modell = getRatingModell(p);
+  const alle = [];
+  for (const grp of Object.values(modell)) {
+    for (const k of Object.keys(grp.attribute)) {
+      alle.push(p.ratings[k] || 0);
+    }
+  }
+  return alle.length ? Math.round((alle.reduce((a, b) => a + b, 0) / alle.length) * 10) : 0;
+}
 function getStatWert(p, feld) {
   if (p.sbRef) {
     if (feld === "xg" && p.sbRef.xg != null) return p.sbRef.xg;
@@ -599,6 +619,7 @@ function viewSpielerDetail(id, tab) {
             ${Object.entries(POOL_LISTEN).map(([k, v]) => `<option value="${k}" ${p.pool === k ? "selected" : ""}>${v.titel}</option>`).join("")}
           </select>
           ${hatRecht("spieler_bearbeiten") ? `<button class="btn btn-ghost btn-sm" onclick="modalSpielerBearbeiten('${p.id}')">✏️ Bearbeiten</button>` : ""}
+          ${hatRecht("spieler_bearbeiten") ? `<button class="btn btn-ghost btn-sm" onclick="modalAttributeBearbeiten('${p.id}')">📊 Attribute</button>` : ""}
           ${hatRecht("spieler_loeschen") ? `<button class="btn btn-ghost btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="spielerLoeschen('${p.id}')">🗑 Löschen</button>` : ""}
           ${p.gesamtbewertungSession ? `<button class="btn btn-sm" style="background:#4f46e5;border-color:#4f46e5;color:#fff" onclick="feedbackExportieren('${p.id}')">📄 Feedback-PDF</button>` : ""}
         </div>
@@ -612,7 +633,8 @@ function viewSpielerDetail(id, tab) {
     <div class="tabs">
       ${[
         ["profil",     "Profil",                                          null],
-        ["bewertung",  "Bewertung",                                       "spieler_bearbeiten"],
+        ["attribute",  "Attribute",                                       null],
+        ["bewertung",  "Bewertung (Slider)",                              "spieler_bearbeiten"],
         ["berichte",   `Berichte (${p.berichte.length})`,                 "berichte"],
         ["videos",     `Videos (${p.videos.length})`,                     "videos"],
         ["entwicklung","Entwicklungsmonitor",                             "entwicklung"],
@@ -625,6 +647,7 @@ function viewSpielerDetail(id, tab) {
 
   const inhalt = $("#tab-inhalt");
   if (aktiverTab === "profil") inhalt.innerHTML = tabProfil(p);
+  else if (aktiverTab === "attribute") inhalt.innerHTML = tabAttributeAnzeige(p);
   else if (aktiverTab === "bewertung") { inhalt.innerHTML = tabBewertung(p); bindRatings(p); }
   else if (aktiverTab === "berichte") inhalt.innerHTML = tabBerichte(p);
   else if (aktiverTab === "videos") inhalt.innerHTML = tabVideos(p);
@@ -751,20 +774,529 @@ function kiKurzprofil(p) {
 
 function topAttribute(p, n, schwaechste = false) {
   const alle = [];
-  for (const grp of Object.values(RATING_MODELL)) {
-    if (grp === RATING_MODELL.potenzial) continue;
+  const modell = getRatingModell(p);
+  for (const grp of Object.values(modell)) {
     for (const [k, label] of Object.entries(grp.attribute)) alle.push({ key: k, label, wert: p.ratings[k] || 0 });
   }
   alle.sort((a, b) => schwaechste ? a.wert - b.wert : b.wert - a.wert);
   return alle.slice(0, n);
 }
 
+function tabAttributeAnzeige(p) {
+  const modell = getRatingModell(p);
+  const istTorwart = p.hauptposition === "Torwart";
+
+  if (istTorwart) {
+    // Torwart-Anzeige mit Tor-Grafik
+    const grafik = renderTorGrafik(p);
+
+    const tabellenHtml = Object.entries(modell).map(([gk, grp]) => {
+      const reihen = Object.entries(grp.attribute).map(([k, label]) => {
+        const wert = p.ratings[k] || 5;
+        return `<tr>
+          <td>${label}</td>
+          <td style="text-align: right; font-weight: 600; color: ${wert >= 14 ? "var(--gruen)" : wert <= 5 ? "var(--rot)" : "var(--text)"}">${wert}</td>
+        </tr>`;
+      }).join("");
+      return `
+        <div class="card" style="margin-bottom: 16px">
+          <table>
+            <thead><tr><th>${grp.titel}</th><th style="text-align: right; width: 60px">Wert</th></tr></thead>
+            <tbody>${reihen}</tbody>
+          </table>
+        </div>
+      `;
+    }).join("");
+
+    const editButton = hatRecht("spieler_bearbeiten") ?
+      `<button class="btn" onclick="modalAttributeBearbeiten('${p.id}')">✏️ Attribute bearbeiten</button>` : "";
+
+    return `
+      <div style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: space-between; align-items: center">
+        <div><div style="font-size: 14px; color: var(--muted)">Position: <strong>${esc(p.hauptposition || "–")}</strong> (Torwart)</div></div>
+        ${editButton}
+      </div>
+
+      <div class="card" style="margin-bottom: 16px">
+        <h3>Torwart-Position im Tor</h3>
+        ${grafik}
+      </div>
+
+      ${tabellenHtml}
+    `;
+  }
+
+  // Feldspieler-Anzeige (mit Grafik & Rollen)
+  const tabellenHtml = Object.entries(modell).map(([gk, grp]) => {
+    const reihen = Object.entries(grp.attribute).map(([k, label]) => {
+      const wert = p.ratings[k] || 5;
+      return `<tr>
+        <td>${label}</td>
+        <td style="text-align: right; font-weight: 600; color: ${wert >= 14 ? "var(--gruen)" : wert <= 5 ? "var(--rot)" : "var(--text)"}">${wert}</td>
+      </tr>`;
+    }).join("");
+    return `
+      <div class="card" style="margin-bottom: 16px">
+        <table>
+          <thead><tr><th>${grp.titel}</th><th style="text-align: right; width: 60px">Wert</th></tr></thead>
+          <tbody>${reihen}</tbody>
+        </table>
+      </div>
+    `;
+  }).join("");
+
+  const editButton = hatRecht("spieler_bearbeiten") ?
+    `<button class="btn" onclick="modalAttributeBearbeiten('${p.id}')">✏️ Attribute bearbeiten</button>` : "";
+
+  // Position-Grafik
+  const grafik = renderFeldpositionGrafik(p);
+
+  // Rollen-Selector
+  const rollen = ROLLEN_PRO_POSITION[p.hauptposition] || [];
+  const rollenHtml = rollen.map((rolle, idx) => {
+    const isSelected = (p.rolle === idx);
+    return `
+      <div style="padding: 12px; background: ${isSelected ? "var(--bg-hover)" : "var(--bg-card)"}; border: 1px solid ${isSelected ? "var(--gruen)" : "var(--border)"}; border-radius: 8px; cursor: pointer" onclick="setSpielerRolle('${p.id}', ${idx})">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <input type="radio" ${isSelected ? "checked" : ""} style="cursor: pointer">
+          <div>
+            <div style="font-weight: 500">${rolle.name}</div>
+            <div style="font-size: 12px; color: var(--muted)">${"★".repeat(rolle.sterne)}${"☆".repeat(5-rolle.sterne)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: space-between; align-items: center">
+      <div><div style="font-size: 14px; color: var(--muted)">Position: <strong>${esc(p.hauptposition || "–")}</strong> (Feldspieler)</div></div>
+      ${editButton}
+    </div>
+
+    <div class="card" style="margin-bottom: 16px">
+      <h3>Spielpositionen</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px">
+        <div>${grafik}</div>
+        <div>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px">
+            <button class="btn btn-sm ${(p.ballVariant || "mit") === "mit" ? "" : "btn-secondary"}" onclick="setSpielerBallVariant('${p.id}', 'mit')">Mit Ball</button>
+            <button class="btn btn-sm ${(p.ballVariant || "mit") === "ohne" ? "" : "btn-secondary"}" onclick="setSpielerBallVariant('${p.id}', 'ohne')">Ohne Ball</button>
+          </div>
+          <div style="font-size: 12px; color: var(--muted); margin-bottom: 12px">
+            Feldposition: <strong>${p.feldposition ? FELDPOSITIONEN[p.feldposition].name : "–"}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 16px">
+      <h3>Rollen (${rollen.length})</h3>
+      <div style="display: grid; gap: 8px">
+        ${rollenHtml}
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 16px">
+      <h3>Kernkompetenzen (Radar-Chart)</h3>
+      ${renderRadarChart(p)}
+    </div>
+
+    ${tabellenHtml}
+  `;
+}
+
+function renderRadarChart(p) {
+  const modell = getRatingModell(p);
+  // Wähle max. 8 Top-Attribute für das Radar-Chart
+  const alle = [];
+  for (const grp of Object.values(modell)) {
+    for (const [k, label] of Object.entries(grp.attribute)) {
+      alle.push({ key: k, label, wert: p.ratings[k] || 0 });
+    }
+  }
+  // Sortiere nach Wert und nimm die Top 8
+  const top8 = alle.sort((a, b) => b.wert - a.wert).slice(0, 8);
+
+  const n = top8.length;
+  const breite = 300, hoehe = 300;
+  const cx = breite / 2, cy = hoehe / 2;
+  const maxRadius = 90;
+  const levels = 5;
+
+  // Hintergründe (Konzentrische Kreise)
+  const backgrounds = [];
+  for (let i = 1; i <= levels; i++) {
+    const r = (i / levels) * maxRadius;
+    backgrounds.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="1" opacity="0.3"/>`);
+    backgrounds.push(`<text x="${cx + r - 5}" y="${cy - 3}" font-size="10" fill="var(--muted)" opacity="0.6">${i * 2}</text>`);
+  }
+
+  // Achsen
+  const achsen = top8.map((attr, idx) => {
+    const angle = (idx / n) * Math.PI * 2 - Math.PI / 2;
+    const x2 = cx + Math.cos(angle) * maxRadius;
+    const y2 = cy + Math.sin(angle) * maxRadius;
+    const labelX = cx + Math.cos(angle) * (maxRadius + 35);
+    const labelY = cy + Math.sin(angle) * (maxRadius + 35);
+    return `
+      <line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="var(--border)" stroke-width="1" opacity="0.3"/>
+      <text x="${labelX}" y="${labelY}" text-anchor="middle" dy="0.3em" font-size="11" fill="var(--text)" font-weight="500">${attr.label}</text>
+    `;
+  }).join("");
+
+  // Datenpunkte und Polygon
+  const points = top8.map((attr, idx) => {
+    const angle = (idx / n) * Math.PI * 2 - Math.PI / 2;
+    const r = (attr.wert / 10) * maxRadius;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    return { x, y, wert: attr.wert };
+  });
+
+  const polygonPoints = points.map(p => `${p.x},${p.y}`).join(" ");
+  const dataPunkte = points.map((p, idx) =>
+    `<circle cx="${p.x}" cy="${p.y}" r="5" fill="var(--gruen)" stroke="#fff" stroke-width="2"/>`
+  ).join("");
+
+  return `
+    <svg viewBox="0 0 ${breite} ${hoehe}" width="100%" height="300" style="border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card)">
+      <!-- Konzentrische Kreise -->
+      ${backgrounds.join("")}
+
+      <!-- Achsen -->
+      ${achsen}
+
+      <!-- Daten-Polygon -->
+      <polygon points="${polygonPoints}" fill="var(--gruen)" opacity="0.2" stroke="var(--gruen)" stroke-width="2"/>
+
+      <!-- Datenpunkte -->
+      ${dataPunkte}
+    </svg>
+  `;
+}
+
+function renderTorGrafik(p) {
+  const breite = 280, hoehe = 120;
+  const svgId = "torgrafik-" + p.id;
+
+  const punkte = Object.entries(TORWART_POSITIONEN).map(([key, pos]) => {
+    const isSelected = p.feldposition === key;
+    const farbe = isSelected ? "#22c55e" : "#eab308";
+    const cx = (pos.x / 100) * breite;
+    const cy = (pos.y / 100) * hoehe;
+    return `
+      <g data-pos-key="${key}" style="cursor: grab">
+        <circle
+          id="pos-${p.id}-${key}"
+          cx="${cx}"
+          cy="${cy}"
+          r="12"
+          fill="${farbe}"
+          stroke="${isSelected ? "#16a34a" : "none"}"
+          stroke-width="2"
+          style="cursor: grab; user-select: none"
+          title="${pos.name}"
+        />
+        <text
+          id="text-${p.id}-${key}"
+          x="${cx}"
+          y="${cy}"
+          text-anchor="middle"
+          dy="0.35em"
+          font-size="10"
+          fill="#000"
+          pointer-events="none"
+          font-weight="700"
+        >${pos.label}</text>
+      </g>
+    `;
+  }).join("");
+
+  return `
+    <svg id="${svgId}" viewBox="0 0 ${breite} ${hoehe}" width="100%" style="border: 2px solid var(--border); border-radius: 8px; background: linear-gradient(135deg, #065f46 0%, #059669 100%); display: block; user-select: none">
+      <!-- Tor -->
+      <rect x="20" y="2" width="240" height="16" fill="none" stroke="#fff" stroke-width="2" opacity="0.6"/>
+      <line x1="50%" y1="2" x2="50%" y2="18" stroke="#fff" stroke-width="1" opacity="0.4"/>
+
+      <!-- Positionen -->
+      ${punkte}
+    </svg>
+    <div style="font-size: 11px; color: var(--muted); margin-top: 8px">💡 Drag & Drop zum Verschieben · Klick zum Auswählen</div>
+    <script>
+      setTimeout(() => initTorwartPositionDragDrop('${p.id}'), 0);
+    </script>
+  `;
+}
+
+function renderFeldpositionGrafik(p) {
+  const breite = 220, hoehe = 220;
+  const svgId = "feldgrafik-" + p.id;
+
+  // Bestimme welche Positionen angezeigt werden sollen
+  let posenZuAuswahl = Object.entries(FELDPOSITIONEN);
+  if (p.aufstellung && AUFSTELLUNGEN[p.aufstellung]) {
+    const aufstPositionen = AUFSTELLUNGEN[p.aufstellung];
+    posenZuAuswahl = aufstPositionen.map(key => [key, FELDPOSITIONEN[key]]).filter(([, pos]) => pos);
+  }
+
+  const punkte = posenZuAuswahl.map(([key, pos]) => {
+    const isSelected = p.feldposition === key;
+    const farbe = isSelected ? "#22c55e" : "#eab308";
+    const cx = (pos.x / 100) * breite;
+    const cy = (pos.y / 100) * hoehe;
+    return `
+      <g data-pos-key="${key}" style="cursor: grab">
+        <circle
+          id="pos-${p.id}-${key}"
+          cx="${cx}"
+          cy="${cy}"
+          r="14"
+          fill="${farbe}"
+          stroke="${isSelected ? "#16a34a" : "none"}"
+          stroke-width="2"
+          style="cursor: grab; user-select: none"
+          title="${pos.name}"
+        />
+        <text
+          id="text-${p.id}-${key}"
+          x="${cx}"
+          y="${cy}"
+          text-anchor="middle"
+          dy="0.35em"
+          font-size="11"
+          fill="#000"
+          pointer-events="none"
+          font-weight="700"
+        >${pos.label}</text>
+      </g>
+    `;
+  }).join("");
+
+  const aufstellungsDropdown = `
+    <div style="margin-bottom: 12px">
+      <label style="font-size: 12px; color: var(--muted); margin-right: 8px">Aufstellung:</label>
+      <select onchange="setSpielerAufstellung('${p.id}', this.value)" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); cursor: pointer">
+        <option value="">– Manuell (Alle Positionen) –</option>
+        ${Object.keys(AUFSTELLUNGEN).map(name => `<option value="${name}" ${p.aufstellung === name ? "selected" : ""}>${name}</option>`).join("")}
+      </select>
+    </div>
+  `;
+
+  const html = `
+    ${aufstellungsDropdown}
+    <svg id="${svgId}" viewBox="0 0 ${breite} ${hoehe}" width="100%" style="border: 2px solid var(--border); border-radius: 8px; background: linear-gradient(135deg, #065f46 0%, #059669 100%); display: block; user-select: none">
+      <!-- Feldlinien -->
+      <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#fff" stroke-width="2" opacity="0.3"/>
+      <circle cx="50%" cy="50%" r="22" stroke="#fff" stroke-width="2" fill="none" opacity="0.3"/>
+      <circle cx="50%" cy="50%" r="2" fill="#fff"/>
+
+      <!-- Positionen -->
+      ${punkte}
+    </svg>
+    <div style="font-size: 11px; color: var(--muted); margin-top: 8px">💡 Drag & Drop zum Verschieben · Klick zum Auswählen</div>
+    <script>
+      setTimeout(() => initFeldpositionDragDrop('${p.id}'), 0);
+    </script>
+  `;
+  return html;
+}
+
+function setSpielerFeldposition(id, position) {
+  const p = findSpieler(id);
+  if (!p) return;
+  p.feldposition = position;
+  speichern();
+  viewSpielerDetail(id, "attribute");
+}
+window.setSpielerFeldposition = setSpielerFeldposition;
+
+function setSpielerBallVariant(id, variant) {
+  const p = findSpieler(id);
+  if (!p) return;
+  p.ballVariant = variant;
+  speichern();
+  viewSpielerDetail(id, "attribute");
+}
+window.setSpielerBallVariant = setSpielerBallVariant;
+
+function setSpielerRolle(id, rolleIdx) {
+  const p = findSpieler(id);
+  if (!p) return;
+  p.rolle = rolleIdx;
+  speichern();
+  viewSpielerDetail(id, "attribute");
+}
+window.setSpielerRolle = setSpielerRolle;
+
+function setSpielerAufstellung(id, aufstellungName) {
+  const p = findSpieler(id);
+  if (!p) return;
+  p.aufstellung = aufstellungName;
+  p.feldposition = null; // Zurücksetzen bei Aufstellungswechsel
+  speichern();
+  viewSpielerDetail(id, "attribute");
+}
+window.setSpielerAufstellung = setSpielerAufstellung;
+
+// Drag & Drop für Torwart-Positionen
+function initTorwartPositionDragDrop(spielerId) {
+  const svg = document.getElementById("torgrafik-" + spielerId);
+  if (!svg) return;
+
+  let draggedCircle = null;
+  let dragStartX = 0, dragStartY = 0;
+  const viewBox = svg.getAttribute("viewBox").split(" ");
+  const vbWidth = parseFloat(viewBox[2]);
+  const vbHeight = parseFloat(viewBox[3]);
+
+  svg.addEventListener("mousedown", (e) => {
+    if (e.target.tagName === "circle") {
+      draggedCircle = e.target;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      draggedCircle.style.cursor = "grabbing";
+      draggedCircle.style.filter = "brightness(1.2)";
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!draggedCircle || !draggedCircle.parentElement) return;
+
+    const rect = svg.getBoundingClientRect();
+    const deltaX = e.clientX - dragStartX;
+    const deltaY = e.clientY - dragStartY;
+
+    const currentX = parseFloat(draggedCircle.getAttribute("cx"));
+    const currentY = parseFloat(draggedCircle.getAttribute("cy"));
+
+    const scaleX = vbWidth / rect.width;
+    const scaleY = vbHeight / rect.height;
+
+    let newX = currentX + (deltaX * scaleX);
+    let newY = currentY + (deltaY * scaleY);
+
+    // Grenzen setzen
+    newX = Math.max(15, Math.min(vbWidth - 15, newX));
+    newY = Math.max(8, Math.min(vbHeight - 5, newY));
+
+    draggedCircle.setAttribute("cx", newX);
+    const textEl = draggedCircle.parentElement.querySelector("text");
+    if (textEl) {
+      textEl.setAttribute("x", newX);
+      textEl.setAttribute("y", newY);
+    }
+
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+  });
+
+  document.addEventListener("mouseup", (e) => {
+    if (!draggedCircle) return;
+
+    draggedCircle.style.cursor = "grab";
+    draggedCircle.style.filter = "";
+
+    const posKey = draggedCircle.parentElement.getAttribute("data-pos-key");
+    const newX = parseFloat(draggedCircle.getAttribute("cx"));
+    const newY = parseFloat(draggedCircle.getAttribute("cy"));
+
+    const p = findSpieler(spielerId);
+    if (p) {
+      if (!p.feldpositionen) p.feldpositionen = {};
+      p.feldpositionen[posKey] = { x: (newX / (vbWidth / 100)), y: (newY / (vbHeight / 100)) };
+      speichern();
+    }
+
+    draggedCircle = null;
+  });
+}
+window.initTorwartPositionDragDrop = initTorwartPositionDragDrop;
+
+// Drag & Drop für Feldpositionen
+function initFeldpositionDragDrop(spielerId) {
+  const svg = document.getElementById("feldgrafik-" + spielerId);
+  if (!svg) return;
+
+  let draggedCircle = null;
+  let dragStartX = 0, dragStartY = 0;
+  const viewBox = svg.getAttribute("viewBox").split(" ");
+  const vbWidth = parseFloat(viewBox[2]);
+  const vbHeight = parseFloat(viewBox[3]);
+
+  svg.addEventListener("mousedown", (e) => {
+    if (e.target.tagName === "circle" && !e.target.getAttribute("id").includes("50%")) {
+      draggedCircle = e.target;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      draggedCircle.style.cursor = "grabbing";
+      draggedCircle.style.filter = "brightness(1.2)";
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!draggedCircle || !draggedCircle.parentElement) return;
+
+    const rect = svg.getBoundingClientRect();
+    const deltaX = e.clientX - dragStartX;
+    const deltaY = e.clientY - dragStartY;
+
+    const currentX = parseFloat(draggedCircle.getAttribute("cx"));
+    const currentY = parseFloat(draggedCircle.getAttribute("cy"));
+
+    const scaleX = vbWidth / rect.width;
+    const scaleY = vbHeight / rect.height;
+
+    let newX = currentX + (deltaX * scaleX);
+    let newY = currentY + (deltaY * scaleY);
+
+    // Grenzen setzen (nicht außerhalb des Feldes)
+    newX = Math.max(20, Math.min(vbWidth - 20, newX));
+    newY = Math.max(20, Math.min(vbHeight - 20, newY));
+
+    draggedCircle.setAttribute("cx", newX);
+    const textEl = draggedCircle.parentElement.querySelector("text");
+    if (textEl) {
+      textEl.setAttribute("x", newX);
+      textEl.setAttribute("y", newY);
+    }
+
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+  });
+
+  document.addEventListener("mouseup", (e) => {
+    if (!draggedCircle) return;
+
+    draggedCircle.style.cursor = "grab";
+    draggedCircle.style.filter = "";
+
+    // Neue Position speichern
+    const posKey = draggedCircle.parentElement.getAttribute("data-pos-key");
+    const newX = parseFloat(draggedCircle.getAttribute("cx"));
+    const newY = parseFloat(draggedCircle.getAttribute("cy"));
+
+    const p = findSpieler(spielerId);
+    if (p) {
+      if (!p.feldpositionen) p.feldpositionen = {};
+      p.feldpositionen[posKey] = { x: (newX / (vbWidth / 100)), y: (newY / (vbHeight / 100)) };
+      speichern();
+    }
+
+    draggedCircle = null;
+  });
+}
+window.initFeldpositionDragDrop = initFeldpositionDragDrop;
+
 function tabBewertung(p) {
+  const modell = getRatingModell(p);
   return `<div class="card">
     <div class="flex-between mb"><h3 style="margin:0">Bewertungsmodell (1–10)</h3>
       <span style="font-size:12.5px;color:var(--muted)">Änderungen werden sofort gespeichert, Scores aktualisieren sich automatisch.</span></div>
     <div class="grid-2">
-      ${Object.entries(RATING_MODELL).map(([gk, grp]) => `
+      ${Object.entries(modell).map(([gk, grp]) => `
         <div class="rating-group">
           <h4>${grp.titel} · Ø ${gruppenSchnitt(p, gk).toFixed(1)}</h4>
           ${Object.entries(grp.attribute).map(([k, label]) => `
@@ -1374,6 +1906,63 @@ function modalSpielerBearbeiten(id) {
   }, 0);
 }
 window.modalSpielerBearbeiten = modalSpielerBearbeiten;
+
+function modalAttributeBearbeiten(id) {
+  const p = findSpieler(id);
+  if (!p) return;
+  const modell = getRatingModell(p);
+  const istTorwart = p.hauptposition === "Torwart";
+
+  const formHtml = Object.entries(modell).map(([gk, grp]) => `
+    <div class="card" style="margin-bottom: 16px">
+      <h4>${grp.titel}</h4>
+      <div style="display: grid; gap: 12px">
+        ${Object.entries(grp.attribute).map(([k, label]) => `
+          <div style="display: grid; grid-template-columns: 140px 1fr 40px; gap: 12px; align-items: center">
+            <label style="font-size: 13px">${label}</label>
+            <input type="range" min="1" max="10" value="${p.ratings[k] || 5}" data-attr="${k}" class="attr-range">
+            <span class="attr-val" data-attr="${k}" style="text-align: right; font-weight: 600">${p.ratings[k] || 5}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  zeigeModal(`
+    <h2>Attribute bearbeiten – ${esc(p.vorname)} ${esc(p.nachname)}</h2>
+    <div style="font-size: 12px; color: var(--muted); margin-bottom: 16px">
+      Position: <strong>${esc(p.hauptposition || "–")}</strong> ${istTorwart ? "(Torwart)" : "(Feldspieler)"}
+    </div>
+    <div id="attr-form">${formHtml}</div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+      <button type="button" class="btn" onclick="speichereAttribute('${id}')">Speichern</button>
+    </div>
+  `);
+
+  // Range-Listener binden
+  document.querySelectorAll(".attr-range").forEach(input => {
+    input.addEventListener("input", e => {
+      const attr = e.target.dataset.attr;
+      document.querySelector(`.attr-val[data-attr="${attr}"]`).textContent = e.target.value;
+    });
+  });
+}
+window.modalAttributeBearbeiten = modalAttributeBearbeiten;
+
+function speichereAttribute(id) {
+  const p = findSpieler(id);
+  if (!p) return;
+  document.querySelectorAll(".attr-range").forEach(input => {
+    const k = input.dataset.attr;
+    p.ratings[k] = +input.value;
+  });
+  speichern();
+  schliesseModal();
+  toast("Attribute gespeichert!");
+  viewSpielerDetail(id, "attribute");
+}
+window.speichereAttribute = speichereAttribute;
 
 function modalNeuerBericht(id) {
   zeigeModal(`

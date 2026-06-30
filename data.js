@@ -3,6 +3,87 @@
 
 const POSITIONEN = ["Torwart", "Innenverteidiger", "Außenverteidiger", "Sechser", "Achter", "Zehner", "Flügelspieler", "Stürmer"];
 
+// Feldpositionen für Grafik (x, y auf 0-100 Skala, 50,50 ist Feldmitte)
+const FELDPOSITIONEN = {
+  AVL: { x: 15, y: 30, label: "AVL", name: "Außenverteidiger Links" },
+  AVR: { x: 85, y: 30, label: "AVR", name: "Außenverteidiger Rechts" },
+  IVL: { x: 20, y: 50, label: "IVL", name: "Innenverteidiger Links" },
+  IVR: { x: 80, y: 50, label: "IVR", name: "Innenverteidiger Rechts" },
+  SECHSER: { x: 50, y: 40, label: "6", name: "Sechser" },
+  ACHTERL: { x: 35, y: 55, label: "8", name: "Achter Links" },
+  ACHTERR: { x: 65, y: 55, label: "8", name: "Achter Rechts" },
+  ZEHNER: { x: 50, y: 65, label: "10", name: "Zehner" },
+  FLUGEL_L: { x: 20, y: 70, label: "FL", name: "Flügelspieler Links" },
+  FLUGEL_R: { x: 80, y: 70, label: "FR", name: "Flügelspieler Rechts" },
+  STURMER_L: { x: 35, y: 85, label: "ST", name: "Stürmer Links" },
+  STURMER_M: { x: 50, y: 90, label: "ST", name: "Stürmer Mitte" },
+  STURMER_R: { x: 65, y: 85, label: "ST", name: "Stürmer Rechts" },
+};
+
+// Torwart-Positionen im Tor (x, y auf 0-100 Skala, Tor ist 50, 10)
+const TORWART_POSITIONEN = {
+  TOR_LINKS: { x: 30, y: 8, label: "L", name: "Linke Ecke" },
+  TOR_MITTE_L: { x: 40, y: 8, label: "ML", name: "Mitte-Links" },
+  TOR_MITTE: { x: 50, y: 8, label: "M", name: "Mitte" },
+  TOR_MITTE_R: { x: 60, y: 8, label: "MR", name: "Mitte-Rechts" },
+  TOR_RECHTS: { x: 70, y: 8, label: "R", name: "Rechte Ecke" },
+};
+
+// Vordefinierte Aufstellungen (Abkürzung -> Array von Feldpositionen)
+const AUFSTELLUNGEN = {
+  "4-3-3": ["AVL", "IVL", "IVR", "AVR", "ACHTERL", "SECHSER", "ACHTERR", "FLUGEL_L", "ZEHNER", "FLUGEL_R", "STURMER_M"],
+  "4-2-3-1": ["AVL", "IVL", "IVR", "AVR", "SECHSER", "ACHTERL", "ACHTERR", "ZEHNER", "FLUGEL_L", "FLUGEL_R", "STURMER_M"],
+  "3-5-2": ["IVL", "SECHSER", "IVR", "AVL", "ACHTERL", "ZEHNER", "ACHTERR", "AVR", "FLUGEL_L", "STURMER_L", "STURMER_R"],
+  "5-3-2": ["AVL", "IVL", "SECHSER", "IVR", "AVR", "ACHTERL", "ZEHNER", "ACHTERR", "STURMER_L", "STURMER_R"],
+  "4-4-2": ["AVL", "IVL", "IVR", "AVR", "FLUGEL_L", "ACHTERL", "ACHTERR", "FLUGEL_R", "STURMER_L", "STURMER_R"],
+};
+
+// Rollen pro Position
+const ROLLEN_PRO_POSITION = {
+  "Außenverteidiger": [
+    { name: "Offensiver Außenverteidiger", sterne: 3 },
+    { name: "Ballspielender Außenverteidiger", sterne: 3 },
+    { name: "Defensiver Außenverteidiger", sterne: 2 },
+    { name: "Inverted Fullback", sterne: 2 },
+  ],
+  "Innenverteidiger": [
+    { name: "Ballspielender Innenverteidiger", sterne: 3 },
+    { name: "Passspiel-Innenverteidiger", sterne: 3 },
+    { name: "Defensiver Innenverteidiger", sterne: 2 },
+    { name: "Luftspiel-Spezialist", sterne: 3 },
+  ],
+  "Sechser": [
+    { name: "Balleroberungsexperte", sterne: 3 },
+    { name: "Spielaufbau-Sechser", sterne: 3 },
+    { name: "Defensiver Sechser", sterne: 2 },
+    { name: "Box-to-Box Sechser", sterne: 2 },
+  ],
+  "Achter": [
+    { name: "Box-to-Box Achter", sterne: 3 },
+    { name: "Offensiver Achter", sterne: 3 },
+    { name: "Defensiver Achter", sterne: 2 },
+    { name: "Antreiber-Achter", sterne: 2 },
+  ],
+  "Zehner": [
+    { name: "Kreativer Zehner", sterne: 3 },
+    { name: "Torschützen-Zehner", sterne: 3 },
+    { name: "Falsche 9", sterne: 2 },
+    { name: "Passspiel-Zehner", sterne: 3 },
+  ],
+  "Flügelspieler": [
+    { name: "Flügelspieler", sterne: 3 },
+    { name: "Umschaltflügel", sterne: 2 },
+    { name: "Mitarbeitender Flügelspieler", sterne: 2 },
+    { name: "Inverser Umschaltflügel", sterne: 2 },
+  ],
+  "Stürmer": [
+    { name: "Klassischer Stürmer", sterne: 3 },
+    { name: "Torjäger", sterne: 3 },
+    { name: "Arbeitsstürmer", sterne: 2 },
+    { name: "Spielmacher-Stürmer", sterne: 2 },
+  ],
+};
+
 const POOL_LISTEN = {
   beobachten: { titel: "Beobachten", desc: "Interessante Spieler – weiter beobachten, mehr Daten notwendig" },
   probetraining: { titel: "Probetraining", desc: "Einladung empfohlen" },
@@ -12,28 +93,74 @@ const POOL_LISTEN = {
 
 const TRIAL_STATUS = ["Keine", "Einladung versendet", "Teilnahme bestätigt", "Teilnahme erfolgt", "Entscheidung offen"];
 
-const RATING_MODELL = {
-  technik: {
-    titel: "Technische Fähigkeiten",
-    attribute: { ballannahme: "Ballannahme", passspiel: "Passspiel", dribbling: "Dribbling", torabschluss: "Torabschluss", flanken: "Flanken", kopfball: "Kopfballspiel" },
+// Separate Bewertungsmodelle für Torwart und Feldspieler
+const RATING_MODELL_TORWART = {
+  torhuter: {
+    titel: "Torschusswerte",
+    attribute: {
+      abschlag: "Abschlag", abwurf: "Abwurf", ballannahme: "Ballannahme", eins_gegen_eins: "Eins gegen Eins",
+      exzentrizitaet: "Exzentrizität", fausten: "Fausten (Tendenz)", halten: "Halten", herauslaufen: "Herauslaufen",
+      hohe_baelle: "Hohe Bälle", kommunikation: "Kommunikation", passen: "Passen", reflexe: "Reflexe", strafraumkontrolle: "Strafraumkontrolle"
+    },
   },
-  taktik: {
-    titel: "Taktische Fähigkeiten",
-    attribute: { spielverstaendnis: "Spielverständnis", positionierung: "Positionierung", entscheidungen: "Entscheidungsverhalten", antizipation: "Antizipation", pressing: "Pressingverhalten" },
+  mental: {
+    titel: "Mental",
+    attribute: {
+      aggressivitaet: "Aggressivität", antizipation: "Antizipation", einsatzfreude: "Einsatzfreude", entscheidungen: "Entscheidungen",
+      flair: "Flair", fuehrungsqualitaet: "Führungsqualität", konzentration: "Konzentration", mut: "Mut",
+      nervenstärke: "Nervenstärke", ohne_ball: "Ohne Ball", stellungsspiel: "Stellungsspiel", teamwork: "Teamwork",
+      uebersicht: "Übersicht", zielstrebigkeit: "Zielstrebigkeit"
+    },
   },
   athletik: {
     titel: "Athletik",
-    attribute: { schnelligkeit: "Schnelligkeit", antritt: "Antritt", ausdauer: "Ausdauer", beweglichkeit: "Beweglichkeit", robustheit: "Robustheit" },
+    attribute: {
+      antritt: "Antritt", ausdauer: "Ausdauer", balance: "Balance", beweglichkeit: "Beweglichkeit",
+      grundfitness: "Grundfitness", kraft: "Kraft", schnelligkeit: "Schnelligkeit", sprunghöhe: "Sprunghöhe"
+    },
+  },
+  technik: {
+    titel: "Technik",
+    attribute: {
+      elfmeter: "Elfmeter", freistoße: "Freistoße", technik: "Technik"
+    },
+  },
+};
+
+const RATING_MODELL_FELDSPIELER = {
+  technik: {
+    titel: "Technisch",
+    attribute: {
+      torabschluss: "Abschluss", ballannahme: "Ballannahme", pressing: "Deckung", dribbling: "Dribbling",
+      flanken: "Flanken", kopfball: "Kopfballtechnik", passspiel: "Passspiel", spielverstaendnis: "Spielverstädnis",
+      wettbewerb: "Wettbewerb", schnelligkeit: "Schnelligkeit"
+    },
+  },
+  taktik: {
+    titel: "Taktik",
+    attribute: {
+      spielverstaendnis: "Spielverständnis", positionierung: "Positionierung", entscheidungen: "Entscheidungsverhalten",
+      antizipation: "Antizipation", pressing: "Pressingverhalten"
+    },
   },
   mentalitaet: {
     titel: "Mentalität",
-    attribute: { lernbereitschaft: "Lernbereitschaft", disziplin: "Disziplin", teamfaehigkeit: "Teamfähigkeit", wettbewerb: "Wettbewerbsmentalität", fuehrung: "Führungsverhalten" },
+    attribute: {
+      lernbereitschaft: "Lernbereitschaft", disziplin: "Disziplin", teamfaehigkeit: "Teamfähigkeit",
+      wettbewerb: "Wettbewerbsmentalität", fuehrung: "Führungsverhalten"
+    },
   },
-  potenzial: {
-    titel: "Potenzial",
-    attribute: { aktuellesNiveau: "Aktuelles Niveau", potenzialniveau: "Potenzialniveau", entwicklung: "Entwicklungsfähigkeit" },
+  athletik: {
+    titel: "Athletik",
+    attribute: {
+      antritt: "Antritt", ausdauer: "Ausdauer", beweglichkeit: "Beweglichkeit", robustheit: "Robustheit",
+      schnelligkeit: "Schnelligkeit"
+    },
   },
 };
+
+// Kompatibilität: generisches RATING_MODELL (wird für allgemeine Funktionen verwendet)
+const RATING_MODELL = RATING_MODELL_FELDSPIELER;
 
 const REPORT_SECTIONS = ["Allgemeiner Eindruck", "Ballbesitz", "Gegen den Ball", "Umschaltspiel", "Persönlichkeit", "Entwicklungspotenzial", "Empfehlung"];
 
