@@ -633,8 +633,7 @@ function viewSpielerDetail(id, tab) {
     <div class="tabs">
       ${[
         ["profil",     "Profil",                                          null],
-        ["spielpositionen",  "Spielpositionen",                           null],
-        ["bewertung",  "Bewertung",                                       "spieler_bearbeiten"],
+        ["attribute",  "Attribute",                                       "spieler_bearbeiten"],
         ["berichte",   `Berichte (${p.berichte.length})`,                 "berichte"],
         ["videos",     `Videos (${p.videos.length})`,                     "videos"],
         ["entwicklung","Entwicklungsmonitor",                             "entwicklung"],
@@ -647,8 +646,7 @@ function viewSpielerDetail(id, tab) {
 
   const inhalt = $("#tab-inhalt");
   if (aktiverTab === "profil") inhalt.innerHTML = tabProfil(p);
-  else if (aktiverTab === "spielpositionen") inhalt.innerHTML = tabSpielpositionenAnzeige(p);
-  else if (aktiverTab === "bewertung") { inhalt.innerHTML = tabBewertung(p); bindRatings(p); }
+  else if (aktiverTab === "attribute") { inhalt.innerHTML = tabAttribute(p); bindRatings(p); }
   else if (aktiverTab === "berichte") inhalt.innerHTML = tabBerichte(p);
   else if (aktiverTab === "videos") inhalt.innerHTML = tabVideos(p);
   else if (aktiverTab === "entwicklung") inhalt.innerHTML = tabEntwicklung(p);
@@ -782,57 +780,6 @@ function topAttribute(p, n, schwaechste = false) {
   return alle.slice(0, n);
 }
 
-function tabSpielpositionenAnzeige(p) {
-  const istTorwart = p.hauptposition === "Torwart";
-
-  if (istTorwart) {
-    const grafik = renderTorGrafik(p);
-    return `
-      <div style="font-size: 14px; color: var(--muted); margin-bottom: 16px">
-        Position: <strong>${esc(p.hauptposition || "–")}</strong> (Torwart)
-      </div>
-      <div class="card">
-        <h3>Torwart-Position im Tor</h3>
-        ${grafik}
-      </div>
-    `;
-  }
-
-  // Feldspieler: nur Grafik + Position-Status
-  const grafik = renderFeldpositionGrafik(p);
-
-  // Position-Status: spielt / taucht / entfällt
-  const statuses = ["spielt", "taucht", "entfällt"];
-  const currentStatus = p.feldpositionStatus || "spielt";
-  const statusHtml = statuses.map(status => {
-    const isSelected = currentStatus === status;
-    const labels = { spielt: "✓ Spielt", taucht: "⇄ Taucht", entfällt: "✗ Entfällt" };
-    return `
-      <button
-        class="btn btn-sm ${isSelected ? "" : "btn-secondary"}"
-        onclick="setSpielerFeldpositionStatus('${p.id}', '${status}')"
-        style="flex: 1"
-      >${labels[status]}</button>
-    `;
-  }).join("");
-
-  return `
-    <div style="font-size: 14px; color: var(--muted); margin-bottom: 16px">
-      Position: <strong>${esc(p.hauptposition || "–")}</strong> (Feldspieler)
-    </div>
-
-    <div class="card" style="margin-bottom: 16px">
-      <h3>Spielpositionen</h3>
-      ${grafik}
-    </div>
-
-    <div class="card">
-      <h3 style="margin: 0 0 12px">Position-Status</h3>
-      <div style="display: flex; gap: 8px">${statusHtml}</div>
-    </div>
-  `;
-}
-
 function renderRadarChart(p) {
   const modell = getRatingModell(p);
   // Wähle max. 8 Top-Attribute für das Radar-Chart
@@ -903,353 +850,51 @@ function renderRadarChart(p) {
   `;
 }
 
-function renderTorGrafik(p) {
-  const breite = 280, hoehe = 120;
-  const svgId = "torgrafik-" + p.id;
-
-  const punkte = Object.entries(TORWART_POSITIONEN).map(([key, pos]) => {
-    const isSelected = p.feldposition === key;
-    const farbe = isSelected ? "#22c55e" : "#eab308";
-    const cx = (pos.x / 100) * breite;
-    const cy = (pos.y / 100) * hoehe;
-    return `
-      <g data-pos-key="${key}" style="cursor: grab">
-        <circle
-          id="pos-${p.id}-${key}"
-          cx="${cx}"
-          cy="${cy}"
-          r="12"
-          fill="${farbe}"
-          stroke="${isSelected ? "#16a34a" : "none"}"
-          stroke-width="2"
-          style="cursor: grab; user-select: none"
-          title="${pos.name}"
-        />
-        <text
-          id="text-${p.id}-${key}"
-          x="${cx}"
-          y="${cy}"
-          text-anchor="middle"
-          dy="0.35em"
-          font-size="10"
-          fill="#000"
-          pointer-events="none"
-          font-weight="700"
-        >${pos.label}</text>
-      </g>
-    `;
-  }).join("");
-
-  return `
-    <svg id="${svgId}" viewBox="0 0 ${breite} ${hoehe}" width="100%" style="border: 2px solid var(--border); border-radius: 8px; background: linear-gradient(135deg, #065f46 0%, #059669 100%); display: block; user-select: none">
-      <!-- Tor -->
-      <rect x="20" y="2" width="240" height="16" fill="none" stroke="#fff" stroke-width="2" opacity="0.6"/>
-      <line x1="50%" y1="2" x2="50%" y2="18" stroke="#fff" stroke-width="1" opacity="0.4"/>
-
-      <!-- Positionen -->
-      ${punkte}
-    </svg>
-    <div style="font-size: 11px; color: var(--muted); margin-top: 8px">💡 Drag & Drop zum Verschieben · Klick zum Auswählen</div>
-    <script>
-      setTimeout(() => initTorwartPositionDragDrop('${p.id}'), 0);
-    </script>
-  `;
-}
-
-function renderFeldpositionGrafik(p) {
-  const breite = 220, hoehe = 220;
-  const svgId = "feldgrafik-" + p.id;
-
-  // Bestimme welche Positionen angezeigt werden sollen
-  let posenZuAuswahl = Object.entries(FELDPOSITIONEN);
-  if (p.aufstellung && AUFSTELLUNGEN[p.aufstellung]) {
-    const aufstPositionen = AUFSTELLUNGEN[p.aufstellung];
-    posenZuAuswahl = aufstPositionen.map(key => [key, FELDPOSITIONEN[key]]).filter(([, pos]) => pos);
-  }
-
-  const punkte = posenZuAuswahl.map(([key, pos]) => {
-    const isSelected = p.feldposition === key;
-    const farbe = isSelected ? "#22c55e" : "#eab308";
-    const cx = (pos.x / 100) * breite;
-    const cy = (pos.y / 100) * hoehe;
-    return `
-      <g data-pos-key="${key}" style="cursor: grab">
-        <circle
-          id="pos-${p.id}-${key}"
-          cx="${cx}"
-          cy="${cy}"
-          r="14"
-          fill="${farbe}"
-          stroke="${isSelected ? "#16a34a" : "none"}"
-          stroke-width="2"
-          style="cursor: grab; user-select: none"
-          title="${pos.name}"
-        />
-        <text
-          id="text-${p.id}-${key}"
-          x="${cx}"
-          y="${cy}"
-          text-anchor="middle"
-          dy="0.35em"
-          font-size="11"
-          fill="#000"
-          pointer-events="none"
-          font-weight="700"
-        >${pos.label}</text>
-      </g>
-    `;
-  }).join("");
-
-  const aufstellungsDropdown = `
-    <div style="margin-bottom: 12px">
-      <label style="font-size: 12px; color: var(--muted); margin-right: 8px">Aufstellung:</label>
-      <select onchange="setSpielerAufstellung('${p.id}', this.value)" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); cursor: pointer">
-        <option value="">– Manuell (Alle Positionen) –</option>
-        ${Object.keys(AUFSTELLUNGEN).map(name => `<option value="${name}" ${p.aufstellung === name ? "selected" : ""}>${name}</option>`).join("")}
-      </select>
-    </div>
-  `;
-
-  const html = `
-    ${aufstellungsDropdown}
-    <svg id="${svgId}" viewBox="0 0 ${breite} ${hoehe}" width="100%" style="border: 2px solid var(--border); border-radius: 8px; background: linear-gradient(135deg, #065f46 0%, #059669 100%); display: block; user-select: none">
-      <!-- Feldlinien -->
-      <line x1="0" y1="50%" x2="100%" y2="50%" stroke="#fff" stroke-width="2" opacity="0.3"/>
-      <circle cx="50%" cy="50%" r="22" stroke="#fff" stroke-width="2" fill="none" opacity="0.3"/>
-      <circle cx="50%" cy="50%" r="2" fill="#fff"/>
-
-      <!-- Positionen -->
-      ${punkte}
-    </svg>
-    <div style="font-size: 11px; color: var(--muted); margin-top: 8px">💡 Drag & Drop zum Verschieben · Klick zum Auswählen</div>
-    <script>
-      setTimeout(() => initFeldpositionDragDrop('${p.id}'), 0);
-    </script>
-  `;
-  return html;
-}
-
-function setSpielerFeldposition(id, position) {
-  const p = findSpieler(id);
-  if (!p) return;
-  p.feldposition = position;
-  speichern();
-  viewSpielerDetail(id, "spielpositionen");
-}
-window.setSpielerFeldposition = setSpielerFeldposition;
-
-function setSpielerFeldpositionStatus(id, status) {
-  const p = findSpieler(id);
-  if (!p) return;
-  p.feldpositionStatus = status;
-  speichern();
-  viewSpielerDetail(id, "spielpositionen");
-}
-window.setSpielerFeldpositionStatus = setSpielerFeldpositionStatus;
-
-function setSpielerAufstellung(id, aufstellungName) {
-  const p = findSpieler(id);
-  if (!p) return;
-  p.aufstellung = aufstellungName || null;
-  p.feldposition = null; // Reset bei Aufstellungswechsel
-  speichern();
-  viewSpielerDetail(id, "spielpositionen");
-}
-window.setSpielerAufstellung = setSpielerAufstellung;
-
-function setSpielerAufstellung(id, aufstellungName) {
-  const p = findSpieler(id);
-  if (!p) return;
-  p.aufstellung = aufstellungName;
-  p.feldposition = null; // Zurücksetzen bei Aufstellungswechsel
-  speichern();
-  viewSpielerDetail(id, "attribute");
-}
-window.setSpielerAufstellung = setSpielerAufstellung;
-
-// Drag & Drop für Torwart-Positionen
-function initTorwartPositionDragDrop(spielerId) {
-  const svg = document.getElementById("torgrafik-" + spielerId);
-  if (!svg) return;
-
-  let draggedCircle = null;
-  let dragStartX = 0, dragStartY = 0;
-  const viewBox = svg.getAttribute("viewBox").split(" ");
-  const vbWidth = parseFloat(viewBox[2]);
-  const vbHeight = parseFloat(viewBox[3]);
-
-  svg.addEventListener("mousedown", (e) => {
-    if (e.target.tagName === "circle") {
-      draggedCircle = e.target;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-      draggedCircle.style.cursor = "grabbing";
-      draggedCircle.style.filter = "brightness(1.2)";
-      e.preventDefault();
-    }
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (!draggedCircle || !draggedCircle.parentElement) return;
-
-    const rect = svg.getBoundingClientRect();
-    const deltaX = e.clientX - dragStartX;
-    const deltaY = e.clientY - dragStartY;
-
-    const currentX = parseFloat(draggedCircle.getAttribute("cx"));
-    const currentY = parseFloat(draggedCircle.getAttribute("cy"));
-
-    const scaleX = vbWidth / rect.width;
-    const scaleY = vbHeight / rect.height;
-
-    let newX = currentX + (deltaX * scaleX);
-    let newY = currentY + (deltaY * scaleY);
-
-    // Grenzen setzen
-    newX = Math.max(15, Math.min(vbWidth - 15, newX));
-    newY = Math.max(8, Math.min(vbHeight - 5, newY));
-
-    draggedCircle.setAttribute("cx", newX);
-    const textEl = draggedCircle.parentElement.querySelector("text");
-    if (textEl) {
-      textEl.setAttribute("x", newX);
-      textEl.setAttribute("y", newY);
-    }
-
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-  });
-
-  document.addEventListener("mouseup", (e) => {
-    if (!draggedCircle) return;
-
-    draggedCircle.style.cursor = "grab";
-    draggedCircle.style.filter = "";
-
-    const posKey = draggedCircle.parentElement.getAttribute("data-pos-key");
-    const newX = parseFloat(draggedCircle.getAttribute("cx"));
-    const newY = parseFloat(draggedCircle.getAttribute("cy"));
-
-    const p = findSpieler(spielerId);
-    if (p) {
-      if (!p.feldpositionen) p.feldpositionen = {};
-      p.feldpositionen[posKey] = { x: (newX / (vbWidth / 100)), y: (newY / (vbHeight / 100)) };
-      speichern();
-    }
-
-    draggedCircle = null;
-  });
-}
-window.initTorwartPositionDragDrop = initTorwartPositionDragDrop;
-
-// Drag & Drop für Feldpositionen
-function initFeldpositionDragDrop(spielerId) {
-  const svg = document.getElementById("feldgrafik-" + spielerId);
-  if (!svg) return;
-
-  let draggedCircle = null;
-  let dragStartX = 0, dragStartY = 0;
-  const viewBox = svg.getAttribute("viewBox").split(" ");
-  const vbWidth = parseFloat(viewBox[2]);
-  const vbHeight = parseFloat(viewBox[3]);
-
-  svg.addEventListener("mousedown", (e) => {
-    if (e.target.tagName === "circle") {
-      const id = e.target.getAttribute("id") || "";
-      // Nur Position-Kreise draggbar (ID beginnt mit "pos-")
-      if (id.startsWith("pos-")) {
-        draggedCircle = e.target;
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
-        draggedCircle.style.cursor = "grabbing";
-        draggedCircle.style.filter = "brightness(1.2)";
-        e.preventDefault();
-      }
-    }
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (!draggedCircle || !draggedCircle.parentElement) return;
-
-    const rect = svg.getBoundingClientRect();
-    const deltaX = e.clientX - dragStartX;
-    const deltaY = e.clientY - dragStartY;
-
-    const currentX = parseFloat(draggedCircle.getAttribute("cx"));
-    const currentY = parseFloat(draggedCircle.getAttribute("cy"));
-
-    const scaleX = vbWidth / rect.width;
-    const scaleY = vbHeight / rect.height;
-
-    let newX = currentX + (deltaX * scaleX);
-    let newY = currentY + (deltaY * scaleY);
-
-    // Grenzen setzen (nicht außerhalb des Feldes)
-    newX = Math.max(20, Math.min(vbWidth - 20, newX));
-    newY = Math.max(20, Math.min(vbHeight - 20, newY));
-
-    draggedCircle.setAttribute("cx", newX);
-    const textEl = draggedCircle.parentElement.querySelector("text");
-    if (textEl) {
-      textEl.setAttribute("x", newX);
-      textEl.setAttribute("y", newY);
-    }
-
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-  });
-
-  document.addEventListener("mouseup", (e) => {
-    if (!draggedCircle) return;
-
-    draggedCircle.style.cursor = "grab";
-    draggedCircle.style.filter = "";
-
-    // Neue Position speichern
-    const posKey = draggedCircle.parentElement.getAttribute("data-pos-key");
-    const newX = parseFloat(draggedCircle.getAttribute("cx"));
-    const newY = parseFloat(draggedCircle.getAttribute("cy"));
-
-    const p = findSpieler(spielerId);
-    if (p) {
-      if (!p.feldpositionen) p.feldpositionen = {};
-      p.feldpositionen[posKey] = { x: (newX / (vbWidth / 100)), y: (newY / (vbHeight / 100)) };
-      speichern();
-    }
-
-    draggedCircle = null;
-  });
-}
-window.initFeldpositionDragDrop = initFeldpositionDragDrop;
-
-function tabBewertung(p) {
+function tabAttribute(p) {
   const modell = getRatingModell(p);
 
-  // Gesamtstärke: Durchschnitt aller Attribute
+  // Gesamtstärke: gewichteter Durchschnitt
   const allAttributes = Object.values(modell).flatMap(grp => Object.keys(grp.attribute));
-  const gesamtstaerke = allAttributes.length > 0
-    ? (allAttributes.reduce((sum, k) => sum + (p.ratings[k] || 5), 0) / allAttributes.length).toFixed(1)
-    : "–";
+  let gewGesamtwert = 0, gewSumme = 0;
+  allAttributes.forEach(k => {
+    const wert = p.ratings[k] || 5;
+    const gew = (p.ratings_gewichtung && p.ratings_gewichtung[k]) || 1;
+    gewGesamtwert += wert * gew;
+    gewSumme += gew;
+  });
+  const gesamtstaerke = gewSumme > 0 ? (gewGesamtwert / gewSumme).toFixed(1) : "–";
 
   return `
     <div class="card" style="background: linear-gradient(135deg, var(--bg-card) 0%, rgba(34,197,94,0.05) 100%); border: 2px solid var(--gruen); margin-bottom: 20px">
       <div style="font-size: 28px; font-weight: 700; color: var(--gruen); margin-bottom: 4px">⭐ ${gesamtstaerke}</div>
-      <div style="font-size: 14px; color: var(--muted)">Gesamtstärke (Ø aller Attribute)</div>
+      <div style="font-size: 14px; color: var(--muted)">Gesamtstärke (gewichtet)</div>
     </div>
 
     <div class="card">
-      <div class="flex-between mb"><h3 style="margin:0">Bewertungen (1–10)</h3>
-        <span style="font-size:12.5px;color:var(--muted)">Änderungen werden sofort gespeichert</span></div>
+      <div class="flex-between mb"><h3 style="margin:0">Attribute (1–10)</h3>
+        <span style="font-size:12.5px;color:var(--muted)">Wert × Gewichtung = Gesamtstärke</span></div>
       <div class="grid-2">
         ${Object.entries(modell).map(([gk, grp]) => `
           <div class="rating-group">
-            <h4>${grp.titel} · Ø ${gruppenSchnitt(p, gk).toFixed(1)}</h4>
-            ${Object.entries(grp.attribute).map(([k, label]) => `
+            <h4>${grp.titel}</h4>
+            ${Object.entries(grp.attribute).map(([k, label]) => {
+              const wert = p.ratings[k] || 5;
+              const gew = (p.ratings_gewichtung && p.ratings_gewichtung[k]) || 1;
+              return `
               <div class="rating-row">
-                <label>${label}</label>
-                <input type="range" min="1" max="10" value="${p.ratings[k] || 5}" data-rating="${k}">
-                <span class="rating-val" id="val-${k}">${p.ratings[k] || 5}</span>
-              </div>`).join("")}
+                <div style="flex: 1">
+                  <label>${label}</label>
+                  <input type="range" min="1" max="10" value="${wert}" data-rating="${k}">
+                  <span class="rating-val" id="val-${k}">${wert}</span>
+                </div>
+                <div style="width: 70px; margin-left: 8px; border-left: 1px solid var(--border); padding-left: 8px">
+                  <input type="number" min="0.1" max="10" step="0.1" value="${gew}" data-gewichtung="${k}"
+                    style="width: 100%; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-card); color: var(--text); font-size: 12px"
+                    placeholder="Gew">
+                  <div style="font-size: 10px; color: var(--muted); margin-top: 2px; text-align: center">Gewichtung</div>
+                </div>
+              </div>`;
+            }).join("")}
           </div>`).join("")}
       </div>
     </div>
@@ -1257,6 +902,7 @@ function tabBewertung(p) {
 }
 
 function bindRatings(p) {
+  // Wert-Slider
   document.querySelectorAll("[data-rating]").forEach(input => {
     input.addEventListener("input", e => {
       const k = e.target.dataset.rating;
@@ -1264,7 +910,18 @@ function bindRatings(p) {
       $(`#val-${k}`).textContent = e.target.value;
       speichern();
     });
-    input.addEventListener("change", () => viewSpielerDetail(p.id, "bewertung"));
+    input.addEventListener("change", () => viewSpielerDetail(p.id, "attribute"));
+  });
+
+  // Gewichtungs-Eingaben
+  document.querySelectorAll("[data-gewichtung]").forEach(input => {
+    input.addEventListener("change", e => {
+      const k = e.target.dataset.gewichtung;
+      if (!p.ratings_gewichtung) p.ratings_gewichtung = {};
+      p.ratings_gewichtung[k] = parseFloat(e.target.value) || 1;
+      speichern();
+      viewSpielerDetail(p.id, "attribute");
+    });
   });
 }
 
