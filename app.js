@@ -2015,21 +2015,18 @@ F95 Talentscout`;
 
   zeigeModal(`
     <h2>Feedback exportieren</h2>
-    <div style="display:flex;gap:12px;margin-bottom:16px">
-      <input type="text" id="feedbackPlayer" value="${esc(p.vorname)} ${esc(p.nachname)}" style="flex:1" readonly>
-      <button class="btn btn-secondary" onclick="document.getElementById('feedbackPlayer').select();document.execCommand('copy');toast('Spielername kopiert')">📋 Kopieren</button>
-    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Markiere den Text mit Strg+A (oder Cmd+A) und kopiere mit Strg+C:</p>
 
-    <h3 style="font-size:13px;margin:16px 0 8px;font-weight:bold">Feedback-Text (kopierbar):</h3>
-    <textarea id="feedbackText" style="width:100%;height:300px;font-family:monospace;font-size:11px;padding:12px;border:1px solid var(--border);border-radius:6px;resize:vertical" readonly>${esc(feedbackRohtext)}</textarea>
+    <h3 style="font-size:13px;margin:0 0 8px;font-weight:bold">Spieler: ${esc(p.vorname)} ${esc(p.nachname)} – Bewertung ${bewertung}/10</h3>
+    <textarea id="feedbackText" style="width:100%;height:350px;font-family:monospace;font-size:11px;padding:12px;border:1px solid var(--border);border-radius:6px;resize:vertical">${esc(feedbackRohtext)}</textarea>
 
     <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn" onclick="document.getElementById('feedbackText').select();document.execCommand('copy');toast('✓ Feedback-Text kopiert')">📋 Text kopieren</button>
+      <button class="btn" onclick="const t=document.getElementById('feedbackText');t.select();document.execCommand('copy');toast('✓ Text kopiert! Du kannst ihn jetzt einfügen.')">📋 Kopieren</button>
     </div>
 
     <div class="modal-actions" style="margin-top:16px">
       <button type="button" class="btn btn-secondary" onclick="schliesseModal()">Schließen</button>
-      <button type="button" class="btn" onclick="downloadPDF()">📥 Auch als PDF herunterladen</button>
+      <button type="button" class="btn" onclick="downloadPDF()">📥 Auch als PDF</button>
     </div>
   `);
 
