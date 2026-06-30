@@ -633,8 +633,8 @@ function viewSpielerDetail(id, tab) {
     <div class="tabs">
       ${[
         ["profil",     "Profil",                                          null],
-        ["attribute",  "Attribute",                                       null],
-        ["bewertung",  "Bewertung (Slider)",                              "spieler_bearbeiten"],
+        ["spielpositionen",  "Spielpositionen",                           null],
+        ["bewertung",  "Bewertung",                                       "spieler_bearbeiten"],
         ["berichte",   `Berichte (${p.berichte.length})`,                 "berichte"],
         ["videos",     `Videos (${p.videos.length})`,                     "videos"],
         ["entwicklung","Entwicklungsmonitor",                             "entwicklung"],
@@ -647,7 +647,7 @@ function viewSpielerDetail(id, tab) {
 
   const inhalt = $("#tab-inhalt");
   if (aktiverTab === "profil") inhalt.innerHTML = tabProfil(p);
-  else if (aktiverTab === "attribute") inhalt.innerHTML = tabAttributeAnzeige(p);
+  else if (aktiverTab === "spielpositionen") inhalt.innerHTML = tabSpielpositionenAnzeige(p);
   else if (aktiverTab === "bewertung") { inhalt.innerHTML = tabBewertung(p); bindRatings(p); }
   else if (aktiverTab === "berichte") inhalt.innerHTML = tabBerichte(p);
   else if (aktiverTab === "videos") inhalt.innerHTML = tabVideos(p);
@@ -782,106 +782,56 @@ function topAttribute(p, n, schwaechste = false) {
   return alle.slice(0, n);
 }
 
-function tabAttributeAnzeige(p) {
-  const modell = getRatingModell(p);
+function tabSpielpositionenAnzeige(p) {
   const istTorwart = p.hauptposition === "Torwart";
 
   if (istTorwart) {
-    // Torwart-Anzeige mit Tor-Grafik
     const grafik = renderTorGrafik(p);
-
-    const tabellenHtml = Object.entries(modell).map(([gk, grp]) => {
-      const reihen = Object.entries(grp.attribute).map(([k, label]) => {
-        const wert = p.ratings[k] || 5;
-        return `<tr>
-          <td>${label}</td>
-          <td style="text-align: right; font-weight: 600; color: ${wert >= 14 ? "var(--gruen)" : wert <= 5 ? "var(--rot)" : "var(--text)"}">${wert}</td>
-        </tr>`;
-      }).join("");
-      return `
-        <div class="card" style="margin-bottom: 16px">
-          <table>
-            <thead><tr><th>${grp.titel}</th><th style="text-align: right; width: 60px">Wert</th></tr></thead>
-            <tbody>${reihen}</tbody>
-          </table>
-        </div>
-      `;
-    }).join("");
-
-    const editButton = hatRecht("spieler_bearbeiten") ?
-      `<button class="btn" onclick="modalAttributeBearbeiten('${p.id}')">✏️ Attribute bearbeiten</button>` : "";
-
     return `
-      <div style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: space-between; align-items: center">
-        <div><div style="font-size: 14px; color: var(--muted)">Position: <strong>${esc(p.hauptposition || "–")}</strong> (Torwart)</div></div>
-        ${editButton}
+      <div style="font-size: 14px; color: var(--muted); margin-bottom: 16px">
+        Position: <strong>${esc(p.hauptposition || "–")}</strong> (Torwart)
       </div>
-
-      <div class="card" style="margin-bottom: 16px">
+      <div class="card">
         <h3>Torwart-Position im Tor</h3>
         ${grafik}
       </div>
-
-      ${tabellenHtml}
     `;
   }
 
-  // Feldspieler-Anzeige (mit Grafik & Rollen)
-  const tabellenHtml = Object.entries(modell).map(([gk, grp]) => {
-    const reihen = Object.entries(grp.attribute).map(([k, label]) => {
-      const wert = p.ratings[k] || 5;
-      return `<tr>
-        <td>${label}</td>
-        <td style="text-align: right; font-weight: 600; color: ${wert >= 14 ? "var(--gruen)" : wert <= 5 ? "var(--rot)" : "var(--text)"}">${wert}</td>
-      </tr>`;
-    }).join("");
-    return `
-      <div class="card" style="margin-bottom: 16px">
-        <table>
-          <thead><tr><th>${grp.titel}</th><th style="text-align: right; width: 60px">Wert</th></tr></thead>
-          <tbody>${reihen}</tbody>
-        </table>
-      </div>
-    `;
-  }).join("");
-
-  const editButton = hatRecht("spieler_bearbeiten") ?
-    `<button class="btn" onclick="modalAttributeBearbeiten('${p.id}')">✏️ Attribute bearbeiten</button>` : "";
-
-  // Position-Grafik
+  // Feldspieler: nur Grafik + Position-Status
   const grafik = renderFeldpositionGrafik(p);
 
-  // Rollen-Selector
-  const rollen = ROLLEN_PRO_POSITION[p.hauptposition] || [];
-  const rollenHtml = rollen.map((rolle, idx) => {
-    const isSelected = (p.rolle === idx);
+  // Position-Status: spielt / taucht / entfällt
+  const statuses = ["spielt", "taucht", "entfällt"];
+  const currentStatus = p.feldpositionStatus || "spielt";
+  const statusHtml = statuses.map(status => {
+    const isSelected = currentStatus === status;
+    const labels = { spielt: "✓ Spielt", taucht: "⇄ Taucht", entfällt: "✗ Entfällt" };
     return `
-      <div style="padding: 12px; background: ${isSelected ? "var(--bg-hover)" : "var(--bg-card)"}; border: 1px solid ${isSelected ? "var(--gruen)" : "var(--border)"}; border-radius: 8px; cursor: pointer" onclick="setSpielerRolle('${p.id}', ${idx})">
-        <div style="display: flex; align-items: center; gap: 8px">
-          <input type="radio" ${isSelected ? "checked" : ""} style="cursor: pointer">
-          <div>
-            <div style="font-weight: 500">${rolle.name}</div>
-            <div style="font-size: 12px; color: var(--muted)">${"★".repeat(rolle.sterne)}${"☆".repeat(5-rolle.sterne)}</div>
-          </div>
-        </div>
-      </div>
+      <button
+        class="btn btn-sm ${isSelected ? "" : "btn-secondary"}"
+        onclick="setSpielerFeldpositionStatus('${p.id}', '${status}')"
+        style="flex: 1"
+      >${labels[status]}</button>
     `;
   }).join("");
 
   return `
-    <div style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: space-between; align-items: center">
-      <div><div style="font-size: 14px; color: var(--muted)">Position: <strong>${esc(p.hauptposition || "–")}</strong> (Feldspieler)</div></div>
-      ${editButton}
+    <div style="font-size: 14px; color: var(--muted); margin-bottom: 16px">
+      Position: <strong>${esc(p.hauptposition || "–")}</strong> (Feldspieler)
     </div>
 
     <div class="card" style="margin-bottom: 16px">
       <h3>Spielpositionen</h3>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px">
-        <div>${grafik}</div>
-        <div>
-          <div style="display: flex; gap: 8px; margin-bottom: 12px">
-            <button class="btn btn-sm ${(p.ballVariant || "mit") === "mit" ? "" : "btn-secondary"}" onclick="setSpielerBallVariant('${p.id}', 'mit')">Mit Ball</button>
-            <button class="btn btn-sm ${(p.ballVariant || "mit") === "ohne" ? "" : "btn-secondary"}" onclick="setSpielerBallVariant('${p.id}', 'ohne')">Ohne Ball</button>
+      ${grafik}
+    </div>
+
+    <div class="card">
+      <h3 style="margin: 0 0 12px">Position-Status</h3>
+      <div style="display: flex; gap: 8px">${statusHtml}</div>
+    </div>
+  `;
+}
           </div>
           <div style="font-size: 12px; color: var(--muted); margin-bottom: 12px">
             Feldposition: <strong>${p.feldposition ? FELDPOSITIONEN[p.feldposition].name : "–"}</strong>
@@ -1107,27 +1057,28 @@ function setSpielerFeldposition(id, position) {
   if (!p) return;
   p.feldposition = position;
   speichern();
-  viewSpielerDetail(id, "attribute");
+  viewSpielerDetail(id, "spielpositionen");
 }
 window.setSpielerFeldposition = setSpielerFeldposition;
 
-function setSpielerBallVariant(id, variant) {
+function setSpielerFeldpositionStatus(id, status) {
   const p = findSpieler(id);
   if (!p) return;
-  p.ballVariant = variant;
+  p.feldpositionStatus = status;
   speichern();
-  viewSpielerDetail(id, "attribute");
+  viewSpielerDetail(id, "spielpositionen");
 }
-window.setSpielerBallVariant = setSpielerBallVariant;
+window.setSpielerFeldpositionStatus = setSpielerFeldpositionStatus;
 
-function setSpielerRolle(id, rolleIdx) {
+function setSpielerAufstellung(id, aufstellungName) {
   const p = findSpieler(id);
   if (!p) return;
-  p.rolle = rolleIdx;
+  p.aufstellung = aufstellungName || null;
+  p.feldposition = null; // Reset bei Aufstellungswechsel
   speichern();
-  viewSpielerDetail(id, "attribute");
+  viewSpielerDetail(id, "spielpositionen");
 }
-window.setSpielerRolle = setSpielerRolle;
+window.setSpielerAufstellung = setSpielerAufstellung;
 
 function setSpielerAufstellung(id, aufstellungName) {
   const p = findSpieler(id);
@@ -1296,22 +1247,36 @@ window.initFeldpositionDragDrop = initFeldpositionDragDrop;
 
 function tabBewertung(p) {
   const modell = getRatingModell(p);
-  return `<div class="card">
-    <div class="flex-between mb"><h3 style="margin:0">Bewertungsmodell (1–10)</h3>
-      <span style="font-size:12.5px;color:var(--muted)">Änderungen werden sofort gespeichert, Scores aktualisieren sich automatisch.</span></div>
-    <div class="grid-2">
-      ${Object.entries(modell).map(([gk, grp]) => `
-        <div class="rating-group">
-          <h4>${grp.titel} · Ø ${gruppenSchnitt(p, gk).toFixed(1)}</h4>
-          ${Object.entries(grp.attribute).map(([k, label]) => `
-            <div class="rating-row">
-              <label>${label}</label>
-              <input type="range" min="1" max="10" value="${p.ratings[k] || 5}" data-rating="${k}">
-              <span class="rating-val" id="val-${k}">${p.ratings[k] || 5}</span>
-            </div>`).join("")}
-        </div>`).join("")}
+
+  // Gesamtstärke: Durchschnitt aller Attribute
+  const allAttributes = Object.values(modell).flatMap(grp => Object.keys(grp.attribute));
+  const gesamtstaerke = allAttributes.length > 0
+    ? (allAttributes.reduce((sum, k) => sum + (p.ratings[k] || 5), 0) / allAttributes.length).toFixed(1)
+    : "–";
+
+  return `
+    <div class="card" style="background: linear-gradient(135deg, var(--bg-card) 0%, rgba(34,197,94,0.05) 100%); border: 2px solid var(--gruen); margin-bottom: 20px">
+      <div style="font-size: 28px; font-weight: 700; color: var(--gruen); margin-bottom: 4px">⭐ ${gesamtstaerke}</div>
+      <div style="font-size: 14px; color: var(--muted)">Gesamtstärke (Ø aller Attribute)</div>
     </div>
-  </div>`;
+
+    <div class="card">
+      <div class="flex-between mb"><h3 style="margin:0">Bewertungen (1–10)</h3>
+        <span style="font-size:12.5px;color:var(--muted)">Änderungen werden sofort gespeichert</span></div>
+      <div class="grid-2">
+        ${Object.entries(modell).map(([gk, grp]) => `
+          <div class="rating-group">
+            <h4>${grp.titel} · Ø ${gruppenSchnitt(p, gk).toFixed(1)}</h4>
+            ${Object.entries(grp.attribute).map(([k, label]) => `
+              <div class="rating-row">
+                <label>${label}</label>
+                <input type="range" min="1" max="10" value="${p.ratings[k] || 5}" data-rating="${k}">
+                <span class="rating-val" id="val-${k}">${p.ratings[k] || 5}</span>
+              </div>`).join("")}
+          </div>`).join("")}
+      </div>
+    </div>
+  `;
 }
 
 function bindRatings(p) {
