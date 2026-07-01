@@ -55,8 +55,29 @@ function gruppenSchnitt(p, gruppe) {
 function gesamtScore(p) {
   const modell = getRatingModell(p);
   const gruppen = Object.keys(modell).filter(k => k !== "potenzial");
-  const g = gruppen.map(x => gruppenSchnitt(p, x));
-  return g.length ? Math.round((g.reduce((a, b) => a + b, 0) / g.length) * 10) : 0;
+
+  // Nutze Attribute-Gewichtung wenn vorhanden
+  const attrGew = {};
+  for (const grp of Object.values(modell)) {
+    for (const attr of Object.keys(grp.attribute)) {
+      const gew = SCORE_CONFIG["gew_" + attr] || 0;
+      if (gew > 0) attrGew[attr] = gew;
+    }
+  }
+
+  if (Object.keys(attrGew).length > 0) {
+    // Mit Attribute-Gewichtung
+    let sum = 0, totalGew = 0;
+    for (const [attr, gew] of Object.entries(attrGew)) {
+      sum += (p.ratings[attr] || 0) * gew;
+      totalGew += gew;
+    }
+    return totalGew > 0 ? Math.round((sum / totalGew) * 10) : 0;
+  } else {
+    // Fallback: alte Berechnung (Gruppen-Durchschnitt)
+    const g = gruppen.map(x => gruppenSchnitt(p, x));
+    return g.length ? Math.round((g.reduce((a, b) => a + b, 0) / g.length) * 10) : 0;
+  }
 }
 function potenzialScore(p) {
   // Vereinfachter Potenzial-Score basierend auf durchschnittlichem Rating
@@ -2227,6 +2248,29 @@ function adminTabScore() {
           </div>`).join("")}
       </div>
 
+      <h4 style="margin:24px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Spieler-Attribute Gewichtung</h4>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Legt fest, welche Spieler-Attribute in den Fortuna-Score einfließen (0 = aus). Summe kann 100 überschreiten.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${(() => {
+          const attrs = [];
+          for (const grp of Object.values(RATING_MODELL)) {
+            for (const [id, label] of Object.entries(grp.attribute)) {
+              const w = cfg["gew_" + id] || 0;
+              attrs.push(`
+                <div style="display:grid;grid-template-columns:1fr 60px;gap:12px;align-items:center;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:${w>0?"rgba(211,25,32,.06)":"transparent"}">
+                  <div style="font-size:13px;font-weight:600">${esc(label)}</div>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" min="0" max="100" value="${w}" id="gew-${id}"
+                      onchange="scoreAttrUpdate('${id}',this.value)"
+                      style="width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:12px;background:var(--bg-card);color:var(--text);text-align:center">
+                  </div>
+                </div>`);
+            }
+          }
+          return attrs.join("");
+        })()}
+      </div>
+
       <h4 style="margin:24px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Statistik-Kriterien</h4>
       <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Gewicht 0 = deaktiviert. Referenzwert = Maximalwert für Normalisierung auf 100 %.</p>
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -2657,6 +2701,14 @@ function scoreRefUpdate(feld, value) {
   SCORE_CONFIG["ref_" + feld] = +value || 1;
 }
 window.scoreRefUpdate = scoreRefUpdate;
+
+function scoreAttrUpdate(attr, value) {
+  SCORE_CONFIG["gew_" + attr] = +value || 0;
+  const el = document.getElementById(`gew-${attr}`);
+  if (el) el.value = +value || 0;
+  renderAdminTab();
+}
+window.scoreAttrUpdate = scoreAttrUpdate;
 
 function scoreSpeichern() {
   speichereScoreConfig();
