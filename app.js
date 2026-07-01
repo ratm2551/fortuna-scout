@@ -894,7 +894,11 @@ function zeigeImageCropModal(id, imageDataUrl) {
     const imgX = (canvas.width - img.width * scale) / 2;
     const imgY = (canvas.height - img.height * scale) / 2;
 
-    cropCtx.drawImage(img, imgX + cropX, imgY + cropY, cropSize, cropSize, 0, 0, 300, 300);
+    const srcX = (cropX - imgX) / scale;
+    const srcY = (cropY - imgY) / scale;
+    const srcSize = cropSize / scale;
+
+    cropCtx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, 300, 300);
 
     const p = findSpieler(id);
     if (p) {
