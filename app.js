@@ -348,7 +348,7 @@ const ALLE_RECHTE = [
 const DEFAULT_BERECHTIGUNGEN = {
   Koordinator: ["spieler_sehen","spielerueberblick","spieler_anlegen","spieler_bearbeiten","spieler_loeschen","csv_export","talentpool","berichte","videos","entwicklung","probetraining","spielervergleich","profilsuche","bundesliga"],
   Scout:       ["spieler_sehen","spielerueberblick","spieler_anlegen","spieler_bearbeiten","csv_export","talentpool","berichte","videos","probetraining","spielervergleich","profilsuche","bundesliga"],
-  Trainer:     ["spieler_sehen","spielerueberblick","spieler_bearbeiten","berichte","entwicklung","spielervergleich"],
+  Trainer:     ["spieler_sehen","spieler_bearbeiten","berichte","entwicklung","spielervergleich"],
 };
 async function ladeBerechtigungen() {
   for (const rolle of ROLLEN) {
