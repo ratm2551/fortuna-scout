@@ -404,3 +404,21 @@ function loescheFirebaseEintrag(id) {
   _fbDb.ref('spieler/' + id).remove()
     .catch(function(e) { console.error('Firebase Lösch-Fehler:', e); });
 }
+
+function speichereBenutzerFirebase(benutzer) {
+  if (!_fbDb || !benutzer) return;
+  var obj = {};
+  benutzer.forEach(function(u) { obj[u.nutzername] = u; });
+  _fbDb.ref('benutzer').update(obj)
+    .catch(function(e) { console.error('Firebase Benutzer Schreibfehler:', e); });
+}
+
+function ladeBenutzerFirebase(callback) {
+  if (!_fbDb) { callback(null); return; }
+  _fbDb.ref('benutzer').once('value', function(snapshot) {
+    var data = snapshot.val();
+    if (!data) { callback(null); return; }
+    var benutzer = Object.values(data);
+    callback(benutzer);
+  }).catch(function(e) { console.error('Firebase Benutzer Lade-Fehler:', e); callback(null); });
+}

@@ -223,6 +223,7 @@ async function speichereBenutzer() {
     await indexedDBPut("benutzer", u);
   }
   localStorage.setItem(USERS_KEY, JSON.stringify(BENUTZER));
+  speichereBenutzerFirebase(BENUTZER);
 }
 
 let BENUTZER = DEFAULT_USERS.map(u => ({ ...u }));
@@ -3108,8 +3109,15 @@ function startApp() {
       } else {
         SPIELER = liste;
       }
-      zeigeLadeOverlay(false);
-      route();
+
+      // Benutzer von Firebase laden wenn vorhanden
+      ladeBenutzerFirebase(function(fbBenutzer) {
+        if (fbBenutzer && fbBenutzer.length > 0) {
+          BENUTZER = fbBenutzer;
+        }
+        zeigeLadeOverlay(false);
+        route();
+      });
     },
     function(liste) {        // Remote-Änderung durch anderen Nutzer
       SPIELER = liste;
