@@ -422,3 +422,9 @@ function ladeBenutzerFirebase(callback) {
     callback(benutzer);
   }).catch(function(e) { console.error('Firebase Benutzer Lade-Fehler:', e); callback(null); });
 }
+
+function speichereBerechtigungenFirebase(berechtigungen) {
+  if (!_fbDb || !berechtigungen) return;
+  _fbDb.ref('berechtigungen').update(berechtigungen)
+    .catch(function(e) { console.error('Firebase Berechtigungen Schreibfehler:', e); });
+}

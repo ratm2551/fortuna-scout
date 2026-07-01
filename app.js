@@ -351,6 +351,22 @@ const DEFAULT_BERECHTIGUNGEN = {
   Trainer:     ["spieler_sehen","spieler_bearbeiten","berichte","entwicklung","spielervergleich","probetraining","talentpool"],
 };
 async function ladeBerechtigungen() {
+  return new Promise((resolve) => {
+    // Versuche zuerst von Firebase zu laden
+    if (window._fbDb) {
+      window._fbDb.ref('berechtigungen').once('value', function(snapshot) {
+        var data = snapshot.val();
+        if (data) { resolve(data); return; }
+        // Firebase leer → versuche lokal zu laden
+        ladeBerechtigungenLokal().then(resolve);
+      }).catch(() => ladeBerechtigungenLokal().then(resolve));
+    } else {
+      ladeBerechtigungenLokal().then(resolve);
+    }
+  });
+}
+
+async function ladeBerechtigungenLokal() {
   let result = {};
   for (const rolle of ROLLEN) {
     const idbData = await indexedDBGet("berechtigungen", rolle);
@@ -367,6 +383,7 @@ async function speichereBerechtigungen(b) {
     await indexedDBPut("berechtigungen", { rolle, rechte });
   }
   localStorage.setItem(BERECHTIGUNGEN_KEY, JSON.stringify(b));
+  speichereBerechtigungenFirebase(b);
 }
 let BERECHTIGUNGEN = JSON.parse(JSON.stringify(DEFAULT_BERECHTIGUNGEN));
 
