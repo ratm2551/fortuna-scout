@@ -671,18 +671,151 @@ function fotoHochladen(id) {
     if (f.size > 2 * 1024 * 1024) { toast("Bild zu groß – max. 2 MB erlaubt."); return; }
     const reader = new FileReader();
     reader.onload = function(ev) {
-      const p = findSpieler(id);
-      if (!p) return;
-      p.foto = ev.target.result;
-      speichern();
-      toast("Foto gespeichert.");
-      viewSpielerDetail(id, aktiverTab);
+      zeigeImageCropModal(id, ev.target.result);
     };
     reader.readAsDataURL(f);
   };
   input.click();
 }
 window.fotoHochladen = fotoHochladen;
+
+function zeigeImageCropModal(id, imageDataUrl) {
+  const modal = document.createElement("div");
+  modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999";
+
+  let cropX = 0, cropY = 0, cropSize = 200, isDragging = false, dragStartX = 0, dragStartY = 0;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 500;
+  canvas.height = 500;
+  const ctx = canvas.getContext("2d");
+
+  const img = new Image();
+  img.onload = function() {
+    function draw() {
+      ctx.fillStyle = "rgba(0,0,0,.5)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+      const x = (canvas.width - img.width * scale) / 2;
+      const y = (canvas.height - img.height * scale) / 2;
+
+      ctx.save();
+      ctx.clearRect(cropX, cropY, cropSize, cropSize);
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+      ctx.restore();
+
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cropX, cropY, cropSize, cropSize);
+      ctx.fillStyle = "rgba(255,255,255,.1)";
+      ctx.fillRect(cropX, cropY, cropSize, cropSize);
+
+      for (let i = 1; i < 3; i++) {
+        ctx.strokeStyle = "rgba(255,255,255,.3)";
+        ctx.beginPath();
+        ctx.moveTo(cropX + (cropSize/3)*i, cropY);
+        ctx.lineTo(cropX + (cropSize/3)*i, cropY + cropSize);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cropX, cropY + (cropSize/3)*i);
+        ctx.lineTo(cropX + cropSize, cropY + (cropSize/3)*i);
+        ctx.stroke();
+      }
+    }
+    draw();
+
+    canvas.onmousedown = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const handleSize = 20;
+      if (x >= cropX - handleSize && x <= cropX + cropSize + handleSize &&
+          y >= cropY - handleSize && y <= cropY + cropSize + handleSize) {
+        isDragging = true;
+        dragStartX = x - cropX;
+        dragStartY = y - cropY;
+      }
+    };
+
+    canvas.onmousemove = (e) => {
+      if (isDragging) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        cropX = Math.max(0, Math.min(x - dragStartX, canvas.width - cropSize));
+        cropY = Math.max(0, Math.min(y - dragStartY, canvas.height - cropSize));
+        draw();
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      if ((x >= cropX - 10 && x <= cropX + cropSize + 10 && y >= cropY - 10 && y <= cropY + cropSize + 10)) {
+        canvas.style.cursor = "move";
+      } else {
+        canvas.style.cursor = "default";
+      }
+    };
+
+    canvas.onmouseup = () => { isDragging = false; };
+    canvas.onmouseleave = () => { isDragging = false; };
+  };
+  img.src = imageDataUrl;
+
+  const content = document.createElement("div");
+  content.style.cssText = "background:#1c1e21;border-radius:12px;padding:24px;max-width:600px;box-shadow:0 20px 60px rgba(0,0,0,.3)";
+  content.innerHTML = `
+    <h3 style="margin:0 0 16px;color:#fff;font-size:18px">📷 Bild zuschneiden</h3>
+    <p style="font-size:13px;color:#9ca3af;margin:0 0 16px">Verschiebe das Rechteck, um den Ausschnitt zu positionieren. (Klick + Ziehen)</p>
+  `;
+
+  canvas.style.cssText = "display:block;border:1px solid #374151;border-radius:8px;max-width:100%;cursor:move;background:#111317";
+  content.appendChild(canvas);
+
+  const actions = document.createElement("div");
+  actions.style.cssText = "display:flex;gap:12px;margin-top:20px;justify-content:flex-end";
+
+  const btnAbbrechen = document.createElement("button");
+  btnAbbrechen.textContent = "Abbrechen";
+  btnAbbrechen.className = "btn btn-secondary";
+  btnAbbrechen.onclick = () => modal.remove();
+
+  const btnSpeichern = document.createElement("button");
+  btnSpeichern.textContent = "✓ Speichern";
+  btnSpeichern.className = "btn";
+  btnSpeichern.onclick = () => {
+    const cropCanvas = document.createElement("canvas");
+    cropCanvas.width = 300;
+    cropCanvas.height = 300;
+    const cropCtx = cropCanvas.getContext("2d");
+
+    const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+    const imgX = (canvas.width - img.width * scale) / 2;
+    const imgY = (canvas.height - img.height * scale) / 2;
+
+    cropCtx.drawImage(img, imgX + cropX, imgY + cropY, cropSize, cropSize, 0, 0, 300, 300);
+
+    const p = findSpieler(id);
+    if (p) {
+      p.foto = cropCanvas.toDataURL("image/jpeg", 0.95);
+      speichern();
+      toast("Foto zugeschnitten & gespeichert.");
+      viewSpielerDetail(id, aktiverTab);
+    }
+    modal.remove();
+  };
+
+  actions.appendChild(btnAbbrechen);
+  actions.appendChild(btnSpeichern);
+  content.appendChild(actions);
+
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+}
+window.zeigeImageCropModal = zeigeImageCropModal;
 
 function fotoEntfernen(id) {
   const p = findSpieler(id);
