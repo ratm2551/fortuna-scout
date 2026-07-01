@@ -995,7 +995,7 @@ function tabProfil(p) {
       ${zeile("Geburtsdatum", `${fmtDatum(p.geburtsdatum)} (${alter(p)} Jahre)`)}
       ${zeile("Nationalität", esc(p.nationalitaet))}
       ${zeile("Talent-Kategorie", p.talent ? `<span class="badge ${p.talent==="A"?"badge-gruen":p.talent==="B"?"badge-gelb":"badge-grau"}">${p.talent}</span>` : "–")}
-      ${zeile("Session-Badge", p.sessionBadge ? esc(p.sessionBadge) : "–")}
+      ${zeile("Session-Badge", p.sessionBatch ? esc(p.sessionBatch) : "–")}
       ${zeile("Gesamtbewertung pro Session", p.gesamtbewertungSession ? `<span class="badge ${p.gesamtbewertungSession <= 3 ? "badge-gruen" : p.gesamtbewertungSession <= 6 ? "badge-gelb" : "badge-grau"}">${p.gesamtbewertungSession} / 10</span>` : "–")}
       ${zeile("Größe / Gewicht", `${p.groesse} cm / ${p.gewicht} kg`)}
       ${zeile("Starker Fuß", esc(p.starkerFuss))}
@@ -1816,7 +1816,7 @@ function modalNeuerSpieler() {
     };
     neu.notizen = "";
     neu.talent = "";
-    neu.sessionBadge = "";
+    neu.sessionBatch = "";
     neu.gesamtbewertungSession = 0;
     neu.statistiken = {};
     SPIELER.push(neu);
@@ -1839,7 +1839,7 @@ function modalSpielerBearbeiten(id) {
         ${feld("Geburtsdatum", "geburtsdatum", "date", `value="${p.geburtsdatum || ""}"`)}
         ${feld("Nationalität", "nationalitaet", "text", `value="${esc(p.nationalitaet || "")}"`)}
         ${feld("Talent-Kategorie", "talent", "text", "", ["", "A", "B", "C"], p.talent || "")}
-        ${feld("Session-Badge", "sessionBadge", "text", "", BADGES.map(b => b.label), (BADGES.find(b => b.label === p.sessionBadge) ? p.sessionBadge : ""))}
+        ${feld("Session-Badge", "sessionBatch", "text", "", BADGES.map(b => b.label), (BADGES.find(b => b.label === p.sessionBatch) ? p.sessionBatch : ""))}
         ${feld("Gesamtbewertung pro Session (1-10)", "gesamtbewertungSession", "number", `min="0" max="10" value="${p.gesamtbewertungSession || 0}"`)}
         ${feld("Verein", "verein", "text", `value="${esc(p.verein)}"`)}
         ${feld("Liga", "liga", "text", `value="${esc(p.liga || "")}"`)}
@@ -1867,7 +1867,7 @@ function modalSpielerBearbeiten(id) {
     p.geburtsdatum = fd.get("geburtsdatum");
     p.nationalitaet = fd.get("nationalitaet") || "Deutschland";
     p.talent = fd.get("talent") || "";
-    p.sessionBadge = fd.get("sessionBadge") || "";
+    p.sessionBatch = fd.get("sessionBatch") || "";
     p.gesamtbewertungSession = +fd.get("gesamtbewertungSession") || 0;
     p.verein = fd.get("verein");
     p.liga = fd.get("liga") || "";
@@ -2536,7 +2536,7 @@ function feedbackExportieren(id) {
   const p = findSpieler(id);
   if (!p || !p.gesamtbewertungSession) { toast("Keine Bewertung hinterlegt."); return; }
   const feedback = generiererFeedback(p.gesamtbewertungSession);
-  const badge = p.sessionBadge || "–";
+  const badge = p.sessionBatch || "–";
   const bewertung = p.gesamtbewertungSession || 0;
   const datum = HEUTE.toLocaleDateString("de-DE");
   const [day, month, year] = datum.split(".");
