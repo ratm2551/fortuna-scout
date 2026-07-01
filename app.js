@@ -2282,15 +2282,13 @@ function adminTabScore() {
         Die Summe <strong>aller</strong> Gewichte muss genau 100 % ergeben.
       </p>
 
-      <h4 style="margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Bewertungsgruppen</h4>
+      <h4 style="margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Bewertungsgruppen (automatisch berechnet)</h4>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Die Prozente werden automatisch aus der Attribute-Gewichtung berechnet.</p>
       <div class="form-grid">
         ${["technik","taktik","athletik","mentalitaet"].map(k => `
           <div class="field">
-            <label>${RATING_MODELL[k].titel}
-              <strong style="color:var(--rot);margin-left:6px" id="sc-${k}-val">${cfg[k]||0}%</strong>
-            </label>
-            <input type="range" min="0" max="100" value="${cfg[k]||0}" id="sc-${k}"
-              oninput="scoreSliderUpdate('${k}',this.value)" style="width:100%">
+            <label>${RATING_MODELL[k].titel}</label>
+            <div style="font-size:24px;font-weight:700;color:var(--rot);padding:12px 0;text-align:center" id="sc-${k}-val">${cfg[k]||0}%</div>
           </div>`).join("")}
       </div>
 
