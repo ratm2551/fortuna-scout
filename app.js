@@ -348,16 +348,17 @@ const ALLE_RECHTE = [
 const DEFAULT_BERECHTIGUNGEN = {
   Koordinator: ["spieler_sehen","spielerueberblick","spieler_anlegen","spieler_bearbeiten","spieler_loeschen","csv_export","talentpool","berichte","videos","entwicklung","probetraining","spielervergleich","profilsuche","bundesliga"],
   Scout:       ["spieler_sehen","spielerueberblick","spieler_anlegen","spieler_bearbeiten","csv_export","talentpool","berichte","videos","probetraining","spielervergleich","profilsuche","bundesliga"],
-  Trainer:     ["spieler_sehen","spieler_bearbeiten","berichte","entwicklung","spielervergleich"],
+  Trainer:     ["spieler_sehen","spieler_bearbeiten","berichte","entwicklung","spielervergleich","probetraining","talentpool"],
 };
 async function ladeBerechtigungen() {
+  let result = {};
   for (const rolle of ROLLEN) {
     const idbData = await indexedDBGet("berechtigungen", rolle);
-    if (idbData?.rechte) return ROLLEN.reduce((obj, r) => {
-      const data = DB?.transaction("berechtigungen", "readonly").objectStore("berechtigungen").get(r);
-      return obj;
-    }, {});
+    if (idbData?.rechte) {
+      result[rolle] = idbData.rechte;
+    }
   }
+  if (Object.keys(result).length > 0) return result;
   try { const s = localStorage.getItem(BERECHTIGUNGEN_KEY); if (s) return JSON.parse(s); } catch {}
   return JSON.parse(JSON.stringify(DEFAULT_BERECHTIGUNGEN));
 }
