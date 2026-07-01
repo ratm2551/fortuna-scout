@@ -780,7 +780,8 @@ function zeigeImageCropModal(id, imageDataUrl) {
   const modal = document.createElement("div");
   modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999";
 
-  let cropX = 0, cropY = 0, cropSize = 200, isDragging = false, dragStartX = 0, dragStartY = 0;
+  let cropSize = 200, cropX = (500 - cropSize) / 2, cropY = (500 - cropSize) / 2;
+  let isDragging = false, dragStartX = 0, dragStartY = 0, resizeMode = null;
 
   const canvas = document.createElement("canvas");
   canvas.width = 500;
@@ -820,46 +821,85 @@ function zeigeImageCropModal(id, imageDataUrl) {
         ctx.lineTo(cropX + cropSize, cropY + (cropSize/3)*i);
         ctx.stroke();
       }
+
+      const handleSize = 12;
+      ctx.fillStyle = "#fff";
+      [[cropX, cropY], [cropX + cropSize, cropY], [cropX, cropY + cropSize], [cropX + cropSize, cropY + cropSize]].forEach(([hx, hy]) => {
+        ctx.fillRect(hx - handleSize/2, hy - handleSize/2, handleSize, handleSize);
+      });
     }
     draw();
+
+    function getResizeMode(x, y) {
+      const handleDist = 15;
+      const corners = [
+        { mode: 'nw', x: cropX, y: cropY },
+        { mode: 'ne', x: cropX + cropSize, y: cropY },
+        { mode: 'sw', x: cropX, y: cropY + cropSize },
+        { mode: 'se', x: cropX + cropSize, y: cropY + cropSize }
+      ];
+      for (let c of corners) {
+        if (Math.abs(x - c.x) < handleDist && Math.abs(y - c.y) < handleDist) return c.mode;
+      }
+      if (x >= cropX && x <= cropX + cropSize && y >= cropY && y <= cropY + cropSize) return 'move';
+      return null;
+    }
 
     canvas.onmousedown = (e) => {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-
-      const handleSize = 20;
-      if (x >= cropX - handleSize && x <= cropX + cropSize + handleSize &&
-          y >= cropY - handleSize && y <= cropY + cropSize + handleSize) {
+      resizeMode = getResizeMode(x, y);
+      if (resizeMode) {
         isDragging = true;
-        dragStartX = x - cropX;
-        dragStartY = y - cropY;
+        dragStartX = x;
+        dragStartY = y;
       }
     };
 
     canvas.onmousemove = (e) => {
-      if (isDragging) {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        cropX = Math.max(0, Math.min(x - dragStartX, canvas.width - cropSize));
-        cropY = Math.max(0, Math.min(y - dragStartY, canvas.height - cropSize));
-        draw();
-      }
-
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      if ((x >= cropX - 10 && x <= cropX + cropSize + 10 && y >= cropY - 10 && y <= cropY + cropSize + 10)) {
-        canvas.style.cursor = "move";
-      } else {
-        canvas.style.cursor = "default";
+
+      if (isDragging && resizeMode) {
+        const dx = x - dragStartX;
+        const dy = y - dragStartY;
+
+        if (resizeMode === 'move') {
+          cropX = Math.max(0, Math.min(cropX + dx, canvas.width - cropSize));
+          cropY = Math.max(0, Math.min(cropY + dy, canvas.height - cropSize));
+        } else if (resizeMode === 'se') {
+          const newSize = Math.min(Math.max(100, cropSize + dx), Math.min(canvas.width - cropX, canvas.height - cropY));
+          cropSize = newSize;
+        } else if (resizeMode === 'sw') {
+          const newSize = Math.min(Math.max(100, cropSize - dx), Math.min(cropX + cropSize, canvas.height - cropY));
+          cropX += cropSize - newSize;
+          cropSize = newSize;
+        } else if (resizeMode === 'ne') {
+          const newSize = Math.min(Math.max(100, cropSize + dx), Math.min(canvas.width - cropX, canvas.height - cropY));
+          cropY += cropSize - newSize;
+          cropSize = newSize;
+        } else if (resizeMode === 'nw') {
+          const newSize = Math.min(Math.max(100, cropSize - dx), Math.min(cropX + cropSize, canvas.height - cropY));
+          cropX += cropSize - newSize;
+          cropY += cropSize - newSize;
+          cropSize = newSize;
+        }
+        dragStartX = x;
+        dragStartY = y;
+        draw();
       }
+
+      const mode = getResizeMode(x, y);
+      if (mode === 'nw' || mode === 'se') canvas.style.cursor = "nwse-resize";
+      else if (mode === 'ne' || mode === 'sw') canvas.style.cursor = "nesw-resize";
+      else if (mode === 'move') canvas.style.cursor = "move";
+      else canvas.style.cursor = "default";
     };
 
-    canvas.onmouseup = () => { isDragging = false; };
-    canvas.onmouseleave = () => { isDragging = false; };
+    canvas.onmouseup = () => { isDragging = false; resizeMode = null; };
+    canvas.onmouseleave = () => { isDragging = false; resizeMode = null; };
   };
   img.src = imageDataUrl;
 
