@@ -111,15 +111,16 @@ function scorePill(wert) {
 // ---------- IndexedDB Persistenz ----------
 const DB_NAME = "FortunaTalentScout";
 const DB_VERSION = 1;
-let DB;
+window.DB = null;
 
 function indexedDBInit() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onerror = () => reject(req.error);
     req.onsuccess = () => {
-      DB = req.result;
-      resolve(DB);
+      window.DB = req.result;
+      console.log('✅ IndexedDB erfolgreich initialisiert');
+      resolve(window.DB);
     };
     req.onupgradeneeded = (e) => {
       const db = e.target.result;
@@ -133,8 +134,8 @@ function indexedDBInit() {
 
 function indexedDBGet(store, key) {
   return new Promise((resolve) => {
-    if (!DB) return resolve(null);
-    const tx = DB.transaction(store, "readonly");
+    if (!window.DB) return resolve(null);
+    const tx = window.DB.transaction(store, "readonly");
     const req = tx.objectStore(store).get(key);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => resolve(null);
@@ -143,8 +144,8 @@ function indexedDBGet(store, key) {
 
 function indexedDBPut(store, data) {
   return new Promise((resolve) => {
-    if (!DB) return resolve(false);
-    const tx = DB.transaction(store, "readwrite");
+    if (!window.DB) return resolve(false);
+    const tx = window.DB.transaction(store, "readwrite");
     const req = tx.objectStore(store).put(data);
     req.onsuccess = () => resolve(true);
     req.onerror = () => resolve(false);
@@ -153,8 +154,8 @@ function indexedDBPut(store, data) {
 
 function indexedDBGetAll(store) {
   return new Promise((resolve) => {
-    if (!DB) return resolve([]);
-    const tx = DB.transaction(store, "readonly");
+    if (!window.DB) return resolve([]);
+    const tx = window.DB.transaction(store, "readonly");
     const req = tx.objectStore(store).getAll();
     req.onsuccess = () => resolve(req.result || []);
     req.onerror = () => resolve([]);
