@@ -56,7 +56,7 @@ function gesamtScore(p) {
   const modell = getRatingModell(p);
   const gruppen = Object.keys(modell).filter(k => k !== "potenzial");
 
-  // Nutze Attribute-Gewichtung wenn vorhanden
+  // Prüfe ob Attribute-Gewichte gesetzt sind
   const attrGew = {};
   for (const grp of Object.values(modell)) {
     for (const attr of Object.keys(grp.attribute)) {
@@ -66,13 +66,15 @@ function gesamtScore(p) {
   }
 
   if (Object.keys(attrGew).length > 0) {
-    // Mit Attribute-Gewichtung
-    let sum = 0, totalGew = 0;
-    for (const [attr, gew] of Object.entries(attrGew)) {
-      sum += (p.ratings[attr] || 0) * gew;
-      totalGew += gew;
+    // Mit Attribute-Gewichtung: Verwende automatisch berechnete Gruppen-Prozente
+    let score = 0;
+    for (const grpKey of gruppen) {
+      const pct = SCORE_CONFIG[grpKey] || 0;
+      if (pct > 0) {
+        score += gruppenSchnitt(p, grpKey) * pct;
+      }
     }
-    return totalGew > 0 ? Math.round((sum / totalGew) * 10) : 0;
+    return score > 0 ? Math.round((score / 100) * 10) : 0;
   } else {
     // Fallback: alte Berechnung (Gruppen-Durchschnitt)
     const g = gruppen.map(x => gruppenSchnitt(p, x));
@@ -2293,20 +2295,35 @@ function adminTabScore() {
       </div>
 
       <h4 style="margin:24px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Spieler-Attribute Gewichtung</h4>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Legt fest, welche Spieler-Attribute in den Fortuna-Score einfließen (0 = aus). Summe kann 100 überschreiten.</p>
-      <div style="display:flex;flex-direction:column;gap:8px">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Punkte pro Attribut eingeben (0-100). Die Prozente werden automatisch berechnet.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px">
         ${
           (() => {
             let html = "";
-            for (const grp of Object.values(RATING_MODELL)) {
-              for (const [id, label] of Object.entries(grp.attribute)) {
+            const allAttrIds = [];
+            for (const [grpKey, grp] of Object.entries(RATING_MODELL)) {
+              const attrEntries = Object.entries(grp.attribute);
+              attrEntries.forEach(([id]) => allAttrIds.push(id));
+
+              let grpSum = 0;
+              for (const [id] of attrEntries) {
+                grpSum += parseInt(cfg["gew_" + id] || 0);
+              }
+
+              html += '<div style="border:1px solid var(--border);border-radius:8px;padding:16px;background:rgba(211,25,32,.02)">';
+              html += '<div style="font-size:14px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">';
+              html += '<span>' + esc(grp.titel) + '</span>';
+              html += '<span style="color:var(--rot);font-size:16px" id="grp-' + grpKey + '-pct">0%</span>';
+              html += '</div>';
+
+              for (const [id, label] of attrEntries) {
                 const w = cfg["gew_" + id] || 0;
-                const bg = w > 0 ? "rgba(211,25,32,.06)" : "transparent";
-                html += '<div style="display:grid;grid-template-columns:1fr 60px;gap:12px;align-items:center;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:' + bg + '">';
-                html += '<div style="font-size:13px;font-weight:600">' + esc(label) + '</div>';
-                html += '<input type="number" min="0" max="100" value="' + w + '" id="gew-' + id + '" onchange="scoreAttrUpdate(\'' + id + '\',this.value)" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:12px;background:var(--bg-card);color:var(--text);text-align:center">';
+                html += '<div style="display:grid;grid-template-columns:1fr 50px;gap:8px;align-items:center;margin-bottom:8px">';
+                html += '<div style="font-size:12px">' + esc(label) + '</div>';
+                html += '<input type="number" min="0" max="100" value="' + w + '" id="gew-' + id + '" onchange="scoreAttrWeightUpdate()" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:12px;background:var(--bg-card);color:var(--text);text-align:center">';
                 html += '</div>';
               }
+              html += '</div>';
             }
             return html;
           })()
@@ -2751,6 +2768,35 @@ function scoreAttrUpdate(attr, value) {
   renderAdminTab();
 }
 window.scoreAttrUpdate = scoreAttrUpdate;
+
+function scoreAttrWeightUpdate() {
+  let gesamtSum = 0;
+  const gruppenSummen = {};
+
+  for (const [grpKey, grp] of Object.entries(RATING_MODELL)) {
+    let sum = 0;
+    for (const id of Object.keys(grp.attribute)) {
+      const el = document.getElementById(`gew-${id}`);
+      const val = el ? +el.value || 0 : 0;
+      SCORE_CONFIG["gew_" + id] = val;
+      sum += val;
+    }
+    gruppenSummen[grpKey] = sum;
+    gesamtSum += sum;
+  }
+
+  for (const grpKey of Object.keys(RATING_MODELL)) {
+    const sum = gruppenSummen[grpKey];
+    const pct = gesamtSum > 0 ? Math.round((sum / gesamtSum) * 100) : 0;
+    const el = document.getElementById(`grp-${grpKey}-pct`);
+    if (el) el.textContent = pct + "%";
+    SCORE_CONFIG[grpKey] = pct;
+  }
+
+  speichereScoreConfig();
+  toast("Attribute-Gewichtung aktualisiert.");
+}
+window.scoreAttrWeightUpdate = scoreAttrWeightUpdate;
 
 function scoreSpeichern() {
   speichereScoreConfig();
