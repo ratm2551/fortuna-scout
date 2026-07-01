@@ -414,6 +414,7 @@ function route() {
     dashboard: viewDashboard,
     spieler: () => (param ? viewSpielerDetail(param) : viewSpielerListe()),
     talentpool: viewTalentpool,
+    datenbank: viewSpielerdatenbank,
     vergleich: viewVergleich,
     probetraining: viewProbetraining,
     bundesliga: viewBundesliga,
@@ -1213,6 +1214,95 @@ function radarChart(labels, datensaetze) {
   });
   return svg + "</svg>";
 }
+
+// ---------- Spielerdatenbank mit Sortierung ----------
+let spielerdatenbankSort = { spalte: 'gesamtstaerke', absteigend: true };
+
+function viewSpielerdatenbank() {
+  const gespeichert = localStorage.getItem('spielerdatenbankSort');
+  if (gespeichert) spielerdatenbankSort = JSON.parse(gespeichert);
+
+  // Sortiere Spieler
+  let sortiert = [...SPIELER];
+  sortiert.sort((a, b) => {
+    let wertA, wertB;
+
+    if (spielerdatenbankSort.spalte === 'name') {
+      wertA = a.nachname + a.vorname;
+      wertB = b.nachname + b.vorname;
+    } else if (spielerdatenbankSort.spalte === 'alter') {
+      wertA = jahrgang(a);
+      wertB = jahrgang(b);
+    } else if (spielerdatenbankSort.spalte === 'gesamtstaerke') {
+      wertA = gesamtScore(a);
+      wertB = gesamtScore(b);
+    } else {
+      wertA = a.ratings[spielerdatenbankSort.spalte] || 0;
+      wertB = b.ratings[spielerdatenbankSort.spalte] || 0;
+    }
+
+    const vergleich = wertA < wertB ? -1 : wertA > wertB ? 1 : 0;
+    return spielerdatenbankSort.absteigend ? -vergleich : vergleich;
+  });
+
+  const pfeil = s => spielerdatenbankSort.spalte === s ? (spielerdatenbankSort.absteigend ? ' ↓' : ' ↑') : '';
+
+  main.innerHTML = `
+    <div class="page-header"><div><h1>Spielerübersicht</h1>
+      <div class="sub">Alle Spieler - Sortierbar nach Stärke und Attributen</div></div></div>
+    <table class="data-table" style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border);background:var(--bg-hover)">
+          <th style="padding:12px;text-align:left;cursor:pointer;font-weight:600;width:50px;user-select:none" onclick="setSortierung('#');">#</th>
+          <th style="padding:12px;text-align:left;cursor:pointer;font-weight:600;user-select:none" onclick="setSortierung('name');">Name${pfeil('name')}</th>
+          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('alter');">Alter${pfeil('alter')}</th>
+          <th style="padding:12px;text-align:left;cursor:pointer;font-weight:600;width:120px;user-select:none" onclick="setSortierung('position');">Position${pfeil('position')}</th>
+          <th style="padding:12px;text-align:left;cursor:pointer;font-weight:600;user-select:none" onclick="setSortierung('verein');">Verein${pfeil('verein')}</th>
+          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:100px;user-select:none" onclick="setSortierung('gesamtstaerke');">⭐ Gesamt${pfeil('gesamtstaerke')}</th>
+          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('technik');">Technik${pfeil('technik')}</th>
+          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('passspiel');">Passspiel${pfeil('passspiel')}</th>
+          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('dribbling');">Dribbling${pfeil('dribbling')}</th>
+          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('athletik');">Athletik${pfeil('athletik')}</th>
+          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('mentalitaet');">Mentalität${pfeil('mentalitaet')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sortiert.map((p, i) => `
+          <tr style="border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'" onclick="location.hash='#/spieler/${p.id}'">
+            <td style="padding:12px;text-align:center;color:var(--muted);font-weight:600">${i + 1}</td>
+            <td style="padding:12px">${esc(p.vorname)} ${esc(p.nachname)}</td>
+            <td style="padding:12px;text-align:center;color:var(--muted)">${jahrgang(p)}</td>
+            <td style="padding:12px;font-size:13px">${esc(p.hauptposition || '–')}</td>
+            <td style="padding:12px;font-size:13px;color:var(--muted)">${esc(p.verein || '–')}</td>
+            <td style="padding:12px;text-align:center;font-weight:600;color:var(--gruen)">${gesamtScore(p).toFixed(1)}</td>
+            <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.technik || 0}</td>
+            <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.passspiel || 0}</td>
+            <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.dribbling || 0}</td>
+            <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.athletik || 0}</td>
+            <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.mentalitaet || 0}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div style="font-size:12px;color:var(--muted);margin-top:16px;padding:0 12px">
+      💡 Klick auf Spalten-Header zum Sortieren · Klick auf Spieler für Details
+    </div>
+  `;
+}
+window.viewSpielerdatenbank = viewSpielerdatenbank;
+
+function setSortierung(spalte) {
+  if (spalte !== '#') {
+    if (spielerdatenbankSort.spalte === spalte) {
+      spielerdatenbankSort.absteigend = !spielerdatenbankSort.absteigend;
+    } else {
+      spielerdatenbankSort = { spalte, absteigend: true };
+    }
+    localStorage.setItem('spielerdatenbankSort', JSON.stringify(spielerdatenbankSort));
+    viewSpielerdatenbank();
+  }
+}
+window.setSortierung = setSortierung;
 
 // ---------- Probetraining ----------
 function viewProbetraining() {
