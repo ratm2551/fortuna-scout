@@ -37,6 +37,21 @@ function fmtDatum(d) {
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
+function fmtLastSeen(timestamp) {
+  if (!timestamp) return "nie";
+  const now = new Date();
+  const then = new Date(timestamp);
+  const diffMs = now - then;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "gerade eben";
+  if (diffMins < 60) return `vor ${diffMins} Min.`;
+  if (diffHours < 24) return `vor ${diffHours} Std.`;
+  if (diffDays < 7) return `vor ${diffDays} Tag${diffDays !== 1 ? 'en' : ''}`;
+  return then.toLocaleDateString('de-DE');
+}
 
 // ---------- Rating-Modell-Auswahl ----------
 function getRatingModell(p) {
@@ -367,6 +382,8 @@ function anmelden(nutzername, passwort) {
   const u = BENUTZER.find(b => b.nutzername === nutzername);
   if (!u || u.passwort !== passwort) return { ok: false, fehler: "Benutzername oder Passwort falsch." };
   if (u.gesperrt) return { ok: false, fehler: "Dieser Zugang wurde gesperrt. Bitte Administrator kontaktieren." };
+  u.lastSeen = new Date().toISOString();
+  speichereBenutzer();
   sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nutzername: u.nutzername, rolle: u.rolle }));
   return { ok: true };
 }
@@ -2246,7 +2263,7 @@ function adminTabBenutzer() {
       </div>
     </div>
     <div class="card">
-      <table><thead><tr><th>Nutzername</th><th>Rolle</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>
+      <table><thead><tr><th>Nutzername</th><th>Rolle</th><th>Status</th><th>Zuletzt online</th><th>Aktionen</th></tr></thead><tbody>
         ${BENUTZER.map(u => `<tr>
           <td><strong>${esc(u.nutzername)}</strong>${u.nutzername === ich ? ' <span class="badge badge-gruen" style="font-size:10px">Du</span>' : ""}</td>
           <td><select onchange="benutzerRolleSetzen('${esc(u.nutzername)}',this.value)" ${u.nutzername === ich ? "disabled" : ""}
@@ -2254,6 +2271,7 @@ function adminTabBenutzer() {
             ${ROLLEN.map(r => `<option ${u.rolle===r?"selected":""}>${r}</option>`).join("")}
           </select></td>
           <td><span class="badge ${u.gesperrt?"badge-grau":"badge-gruen"}">${u.gesperrt?"Gesperrt":"Aktiv"}</span></td>
+          <td style="font-size:12px;color:var(--muted)">${fmtLastSeen(u.lastSeen)}</td>
           <td style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
             <button class="btn btn-sm btn-secondary" onclick="modalPasswortAendern('${esc(u.nutzername)}')">Passwort ändern</button>
             ${u.nutzername !== ich ? `
