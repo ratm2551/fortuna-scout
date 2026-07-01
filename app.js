@@ -2251,24 +2251,22 @@ function adminTabScore() {
       <h4 style="margin:24px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Spieler-Attribute Gewichtung</h4>
       <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Legt fest, welche Spieler-Attribute in den Fortuna-Score einfließen (0 = aus). Summe kann 100 überschreiten.</p>
       <div style="display:flex;flex-direction:column;gap:8px">
-        ${(() => {
-          const attrs = [];
-          for (const grp of Object.values(RATING_MODELL)) {
-            for (const [id, label] of Object.entries(grp.attribute)) {
-              const w = cfg["gew_" + id] || 0;
-              attrs.push(`
-                <div style="display:grid;grid-template-columns:1fr 60px;gap:12px;align-items:center;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:${w>0?"rgba(211,25,32,.06)":"transparent"}">
-                  <div style="font-size:13px;font-weight:600">${esc(label)}</div>
-                  <div style="display:flex;align-items:center;gap:6px">
-                    <input type="number" min="0" max="100" value="${w}" id="gew-${id}"
-                      onchange="scoreAttrUpdate('${id}',this.value)"
-                      style="width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:12px;background:var(--bg-card);color:var(--text);text-align:center">
-                  </div>
-                </div>`);
+        ${
+          (() => {
+            let html = "";
+            for (const grp of Object.values(RATING_MODELL)) {
+              for (const [id, label] of Object.entries(grp.attribute)) {
+                const w = cfg["gew_" + id] || 0;
+                const bg = w > 0 ? "rgba(211,25,32,.06)" : "transparent";
+                html += '<div style="display:grid;grid-template-columns:1fr 60px;gap:12px;align-items:center;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:' + bg + '">';
+                html += '<div style="font-size:13px;font-weight:600">' + esc(label) + '</div>';
+                html += '<input type="number" min="0" max="100" value="' + w + '" id="gew-' + id + '" onchange="scoreAttrUpdate(\'' + id + '\',this.value)" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:12px;background:var(--bg-card);color:var(--text);text-align:center">';
+                html += '</div>';
+              }
             }
-          }
-          return attrs.join("");
-        })()}
+            return html;
+          })()
+        }
       </div>
 
       <h4 style="margin:24px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Statistik-Kriterien</h4>
