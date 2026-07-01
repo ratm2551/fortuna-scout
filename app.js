@@ -108,6 +108,59 @@ function scorePill(wert) {
   return `<span class="score-pill ${cls}">${wert}</span>`;
 }
 
+// ---------- IndexedDB Persistenz ----------
+const DB_NAME = "FortunaTalentScout";
+const DB_VERSION = 1;
+let DB;
+
+function indexedDBInit() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      DB = req.result;
+      resolve(DB);
+    };
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("benutzer")) db.createObjectStore("benutzer", { keyPath: "nutzername" });
+      if (!db.objectStoreNames.contains("berechtigungen")) db.createObjectStore("berechtigungen", { keyPath: "rolle" });
+      if (!db.objectStoreNames.contains("spieler")) db.createObjectStore("spieler", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("scores")) db.createObjectStore("scores", { keyPath: "key" });
+    };
+  });
+}
+
+function indexedDBGet(store, key) {
+  return new Promise((resolve) => {
+    if (!DB) return resolve(null);
+    const tx = DB.transaction(store, "readonly");
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+
+function indexedDBPut(store, data) {
+  return new Promise((resolve) => {
+    if (!DB) return resolve(false);
+    const tx = DB.transaction(store, "readwrite");
+    const req = tx.objectStore(store).put(data);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => resolve(false);
+  });
+}
+
+function indexedDBGetAll(store) {
+  return new Promise((resolve) => {
+    if (!DB) return resolve([]);
+    const tx = DB.transaction(store, "readonly");
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => resolve([]);
+  });
+}
+
 // ---------- Authentifizierung ----------
 const ROLLEN = ["Koordinator", "Scout", "Trainer", "Administrator"];
 const USERS_KEY = "fortuna-users-v1";
@@ -118,12 +171,22 @@ const DEFAULT_USERS = [
   { nutzername: "trainer",     passwort: "trainer123", rolle: "Trainer",       gesperrt: false },
   { nutzername: "admin",       passwort: "admin2024",  rolle: "Administrator", gesperrt: false },
 ];
-function ladeBenutzer() {
+
+async function ladeBenutzer() {
+  const idbData = await indexedDBGetAll("benutzer");
+  if (idbData && idbData.length > 0) return idbData;
   try { const s = localStorage.getItem(USERS_KEY); if (s) return JSON.parse(s); } catch {}
   return DEFAULT_USERS.map(u => ({ ...u }));
 }
-function speichereBenutzer() { localStorage.setItem(USERS_KEY, JSON.stringify(BENUTZER)); }
-let BENUTZER = ladeBenutzer();
+
+async function speichereBenutzer() {
+  for (const u of BENUTZER) {
+    await indexedDBPut("benutzer", u);
+  }
+  localStorage.setItem(USERS_KEY, JSON.stringify(BENUTZER));
+}
+
+let BENUTZER = DEFAULT_USERS.map(u => ({ ...u }));
 
 // ---------- Fortuna-Score-Konfiguration ----------
 const SCORE_CONFIG_KEY = "fortuna-score-config-v2";
@@ -247,12 +310,24 @@ const DEFAULT_BERECHTIGUNGEN = {
   Scout:       ["spieler_sehen","spielerueberblick","spieler_anlegen","spieler_bearbeiten","csv_export","talentpool","berichte","videos","probetraining","spielervergleich","profilsuche","bundesliga"],
   Trainer:     ["spieler_sehen","spielerueberblick","spieler_bearbeiten","berichte","entwicklung","spielervergleich"],
 };
-function ladeBerechtigungen() {
+async function ladeBerechtigungen() {
+  for (const rolle of ROLLEN) {
+    const idbData = await indexedDBGet("berechtigungen", rolle);
+    if (idbData?.rechte) return ROLLEN.reduce((obj, r) => {
+      const data = DB?.transaction("berechtigungen", "readonly").objectStore("berechtigungen").get(r);
+      return obj;
+    }, {});
+  }
   try { const s = localStorage.getItem(BERECHTIGUNGEN_KEY); if (s) return JSON.parse(s); } catch {}
   return JSON.parse(JSON.stringify(DEFAULT_BERECHTIGUNGEN));
 }
-function speichereBerechtigungen(b) { localStorage.setItem(BERECHTIGUNGEN_KEY, JSON.stringify(b)); }
-let BERECHTIGUNGEN = ladeBerechtigungen();
+async function speichereBerechtigungen(b) {
+  for (const [rolle, rechte] of Object.entries(b)) {
+    await indexedDBPut("berechtigungen", { rolle, rechte });
+  }
+  localStorage.setItem(BERECHTIGUNGEN_KEY, JSON.stringify(b));
+}
+let BERECHTIGUNGEN = JSON.parse(JSON.stringify(DEFAULT_BERECHTIGUNGEN));
 
 function hatRecht(id) {
   const n = aktuellerNutzer();
@@ -2906,4 +2981,14 @@ $("#resetData").addEventListener("click", () => {
   </div></div>`;
   $(".modal-backdrop").addEventListener("click", e => { if (e.target.classList.contains("modal-backdrop")) schliesseModal(); });
 });
-startApp();
+
+(async function initApp() {
+  try {
+    await indexedDBInit();
+    BENUTZER = await ladeBenutzer();
+    BERECHTIGUNGEN = await ladeBerechtigungen();
+  } catch (e) {
+    console.error("IndexedDB Init Fehler:", e);
+  }
+  startApp();
+})();

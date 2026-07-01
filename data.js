@@ -299,12 +299,16 @@ function ladeSpieler() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw !== null) return JSON.parse(raw) || [];
   } catch (e) {}
-  localStorage.setItem(STORAGE_KEY, "[]");
   return [];
 }
 
-function speichereSpieler(spieler) {
+async function speichereSpieler(spieler) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(spieler));
+  if (window.DB) {
+    for (const s of spieler) {
+      await window.indexedDBPut("spieler", s);
+    }
+  }
 }
 
 function resetDemodaten() {
