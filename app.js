@@ -693,23 +693,24 @@ function zeigeImageCropModal(id, imageDataUrl) {
   const img = new Image();
   img.onload = function() {
     function draw() {
-      ctx.fillStyle = "rgba(0,0,0,.5)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
       const x = (canvas.width - img.width * scale) / 2;
       const y = (canvas.height - img.height * scale) / 2;
 
-      ctx.save();
-      ctx.clearRect(cropX, cropY, cropSize, cropSize);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(0,0,0,.8)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-      ctx.restore();
+
+      ctx.fillStyle = "rgba(0,0,0,.5)";
+      ctx.fillRect(0, 0, cropX, canvas.height);
+      ctx.fillRect(cropX + cropSize, 0, canvas.width - (cropX + cropSize), canvas.height);
+      ctx.fillRect(cropX, 0, cropSize, cropY);
+      ctx.fillRect(cropX, cropY + cropSize, cropSize, canvas.height - (cropY + cropSize));
 
       ctx.strokeStyle = "#fff";
       ctx.lineWidth = 2;
       ctx.strokeRect(cropX, cropY, cropSize, cropSize);
-      ctx.fillStyle = "rgba(255,255,255,.1)";
-      ctx.fillRect(cropX, cropY, cropSize, cropSize);
 
       for (let i = 1; i < 3; i++) {
         ctx.strokeStyle = "rgba(255,255,255,.3)";
