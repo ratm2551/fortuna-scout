@@ -3144,8 +3144,20 @@ $("#resetData").addEventListener("click", () => {
     await indexedDBInit();
     BENUTZER = await ladeBenutzer();
     BERECHTIGUNGEN = await ladeBerechtigungen();
+    aktuellerBenutzerAktualisieren();
   } catch (e) {
     console.error("IndexedDB Init Fehler:", e);
   }
   startApp();
 })();
+
+function aktuellerBenutzerAktualisieren() {
+  const nutzer = aktuellerNutzer();
+  if (nutzer) {
+    const u = BENUTZER.find(b => b.nutzername === nutzer.nutzername);
+    if (u) {
+      u.lastSeen = new Date().toISOString();
+      speichereBenutzer();
+    }
+  }
+}
