@@ -228,6 +228,7 @@ const FEEDBACK_VORLAGEN = {
 const BERECHTIGUNGEN_KEY = "fortuna-berechtigungen-v1";
 const ALLE_RECHTE = [
   { id: "spieler_sehen",      label: "Spielerdatenbank ansehen" },
+  { id: "spielerueberblick",  label: "Spielerübersicht / Sortieren ansehen" },
   { id: "spieler_anlegen",    label: "Spieler anlegen" },
   { id: "spieler_bearbeiten", label: "Spieler bearbeiten" },
   { id: "spieler_loeschen",   label: "Spieler löschen" },
@@ -242,9 +243,9 @@ const ALLE_RECHTE = [
   { id: "bundesliga",         label: "Bundesliga / StatsBomb-Daten" },
 ];
 const DEFAULT_BERECHTIGUNGEN = {
-  Koordinator: ["spieler_sehen","spieler_anlegen","spieler_bearbeiten","spieler_loeschen","csv_export","talentpool","berichte","videos","entwicklung","probetraining","spielervergleich","profilsuche","bundesliga"],
-  Scout:       ["spieler_sehen","spieler_anlegen","spieler_bearbeiten","csv_export","talentpool","berichte","videos","probetraining","spielervergleich","profilsuche","bundesliga"],
-  Trainer:     ["spieler_sehen","spieler_bearbeiten","berichte","entwicklung","spielervergleich"],
+  Koordinator: ["spieler_sehen","spielerueberblick","spieler_anlegen","spieler_bearbeiten","spieler_loeschen","csv_export","talentpool","berichte","videos","entwicklung","probetraining","spielervergleich","profilsuche","bundesliga"],
+  Scout:       ["spieler_sehen","spielerueberblick","spieler_anlegen","spieler_bearbeiten","csv_export","talentpool","berichte","videos","probetraining","spielervergleich","profilsuche","bundesliga"],
+  Trainer:     ["spieler_sehen","spielerueberblick","spieler_bearbeiten","berichte","entwicklung","spielervergleich"],
 };
 function ladeBerechtigungen() {
   try { const s = localStorage.getItem(BERECHTIGUNGEN_KEY); if (s) return JSON.parse(s); } catch {}
@@ -331,6 +332,7 @@ function viewLogin() {
 
 const ROUTE_RECHTE = {
   spieler:      "spieler_sehen",
+  datenbank:    "spielerueberblick",
   talentpool:   "talentpool",
   vergleich:    "spielervergleich",
   probetraining:"probetraining",
