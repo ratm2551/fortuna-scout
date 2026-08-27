@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fortuna Talent Scout Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect fill='%23dc2626' width='64' height='64'/><text x='32' y='48' font-size='48' font-weight='700' fill='white' text-anchor='middle' font-family='Arial'>F</text></svg>">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=1.1.0">
 </head>
 <body>
 <button class="menu-toggle" id="menuToggle" aria-label="Menü öffnen">☰</button>
@@ -40,7 +40,7 @@
       <button class="btn btn-ghost btn-sm" id="resetData">Demodaten zurücksetzen</button>
       <button class="btn btn-ghost btn-sm" onclick="abmelden()" style="color:var(--muted)">↩ Abmelden</button>
       <div id="fb-status" style="font-size:11px;margin-top:4px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#9ca3af">⏳ Datenbank...</div>
-      <div class="version">Fortuna Scout · Version 1.0</div>
+      <div class="version" id="app-version">Fortuna Scout · Version 1.1.0</div>
     </div>
   </aside>
   <main id="main" class="main"></main>
@@ -49,9 +49,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="firebase-config.js"></script>
-<script src="data.js"></script>
-<script src="statsbomb.js"></script>
-<script src="app.js"></script>
+<script src="firebase-config.js?v=1.1.0"></script>
+<script src="data.js?v=1.1.0"></script>
+<script src="statsbomb.js?v=1.1.0"></script>
+<script src="app.js?v=1.1.0"></script>
 </body>
 </html>

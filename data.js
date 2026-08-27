@@ -428,3 +428,64 @@ function speichereBerechtigungenFirebase(berechtigungen) {
   _fbDb.ref('berechtigungen').update(berechtigungen)
     .catch(function(e) { console.error('Firebase Berechtigungen Schreibfehler:', e); });
 }
+
+// ── Live-Synchronisation für Benutzer, Rechte und Konfiguration ─────────────
+// Alles was den Arbeitsstand aller Nutzer betrifft, hängt hier an einem
+// .on('value')-Listener – so bekommt jeder Browser Änderungen sofort,
+// nicht erst beim nächsten Neuladen.
+
+function abonniereBenutzer(callback) {
+  if (!_fbDb) return false;
+  _fbDb.ref('benutzer').on('value', function(snapshot) {
+    var data = snapshot.val();
+    callback(data ? Object.values(data) : null);
+  }, function(e) { console.error('Firebase Benutzer Sync-Fehler:', e); });
+  return true;
+}
+
+function loescheBenutzerFirebase(nutzername) {
+  if (!_fbDb || !nutzername) return;
+  _fbDb.ref('benutzer/' + nutzername).remove()
+    .catch(function(e) { console.error('Firebase Benutzer Lösch-Fehler:', e); });
+}
+
+function abonniereBerechtigungen(callback) {
+  if (!_fbDb) return false;
+  _fbDb.ref('berechtigungen').on('value', function(snapshot) {
+    var data = snapshot.val();
+    if (!data) return;
+    // Firebase liefert leere Arrays gar nicht mit – fehlende Rollen ergänzen
+    var b = {};
+    Object.keys(data).forEach(function(rolle) { b[rolle] = toArray(data[rolle]); });
+    callback(b);
+  }, function(e) { console.error('Firebase Berechtigungen Sync-Fehler:', e); });
+  return true;
+}
+
+function speichereScoreConfigFirebase(config) {
+  if (!_fbDb || !config) return;
+  _fbDb.ref('scoreConfig').set(config)
+    .catch(function(e) { console.error('Firebase Score-Config Schreibfehler:', e); });
+}
+
+function abonniereScoreConfig(callback) {
+  if (!_fbDb) return false;
+  _fbDb.ref('scoreConfig').on('value', function(snapshot) {
+    callback(snapshot.val());
+  }, function(e) { console.error('Firebase Score-Config Sync-Fehler:', e); });
+  return true;
+}
+
+function speichereFeedbackLinksFirebase(links) {
+  if (!_fbDb || !links) return;
+  _fbDb.ref('feedbackLinks').set(links)
+    .catch(function(e) { console.error('Firebase Feedback-Links Schreibfehler:', e); });
+}
+
+function abonniereFeedbackLinks(callback) {
+  if (!_fbDb) return false;
+  _fbDb.ref('feedbackLinks').on('value', function(snapshot) {
+    callback(snapshot.val());
+  }, function(e) { console.error('Firebase Feedback-Links Sync-Fehler:', e); });
+  return true;
+}

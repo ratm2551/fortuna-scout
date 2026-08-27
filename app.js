@@ -21,7 +21,7 @@ function alter(p) {
   if (HEUTE < new Date(HEUTE.getFullYear(), g.getMonth(), g.getDate())) a--;
   return a;
 }
-function initialen(p) { return (p.vorname[0] || "") + (p.nachname[0] || ""); }
+function initialen(p) { return ((p.vorname || "")[0] || "") + ((p.nachname || "")[0] || ""); }
 function fmtDatum(d) {
   if (!d) return "–";
   d = String(d).trim();
@@ -190,6 +190,16 @@ function indexedDBPut(store, data) {
   });
 }
 
+function indexedDBDelete(store, key) {
+  return new Promise((resolve) => {
+    if (!window.DB) return resolve(false);
+    const tx = window.DB.transaction(store, "readwrite");
+    const req = tx.objectStore(store).delete(key);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => resolve(false);
+  });
+}
+
 function indexedDBGetAll(store) {
   return new Promise((resolve) => {
     if (!window.DB) return resolve([]);
@@ -253,7 +263,10 @@ function ladeScoreConfig() {
   try { const s = localStorage.getItem(SCORE_CONFIG_KEY); if (s) return JSON.parse(s); } catch {}
   return { ...DEFAULT_SCORE_CONFIG };
 }
-function speichereScoreConfig() { localStorage.setItem(SCORE_CONFIG_KEY, JSON.stringify(SCORE_CONFIG)); }
+function speichereScoreConfig() {
+  localStorage.setItem(SCORE_CONFIG_KEY, JSON.stringify(SCORE_CONFIG));
+  speichereScoreConfigFirebase(SCORE_CONFIG);
+}
 let SCORE_CONFIG = ladeScoreConfig();
 
 function generiererFeedback(bewertung) {
@@ -287,6 +300,7 @@ function ladeFeedbackLinks() {
 }
 function speichereFeedbackLinks(links) {
   localStorage.setItem(FEEDBACK_LINKS_KEY, JSON.stringify(links));
+  speichereFeedbackLinksFirebase(links);
 }
 let FEEDBACK_LINKS = ladeFeedbackLinks();
 
@@ -645,7 +659,7 @@ function viewDashboard() {
     </div>
     <div class="card mt">
       <h3>🏆 Top-Talente nach Potenzial</h3>
-      ${spielerTabelle(SPIELER.filter(p => p.pool !== "archiv").sort((a, b) => potenzialScore(b) - potenzialScore(a)).slice(0, 5))}
+      ${spielerTabelle(SPIELER.filter(p => p.pool !== "archiv").sort((a, b) => potenzialScore(b) - potenzialScore(a)).slice(0, 5), false)}
     </div>`;
 }
 function kpi(wert, label, ziel) {
@@ -654,6 +668,47 @@ function kpi(wert, label, ziel) {
 
 // ---------- Spielerliste ----------
 let filter = { suche: "", position: "", jahrgang: "", verein: "", minGesamt: "", minPotenzial: "" };
+
+const POOL_REIHENFOLGE = ["verpflichtung", "probetraining", "beobachten", "archiv"];
+const LISTEN_SORT_KEY = "fortuna-spielerliste-sort-v1";
+
+// Spalten der Spielerliste: Label, Sortierwert und ob numerisch (= startet absteigend)
+const LISTEN_SPALTEN = {
+  spieler:   { label: "Spieler",     num: false, wert: p => `${p.nachname || ""} ${p.vorname || ""}`.trim().toLowerCase() },
+  jahrgang:  { label: "Jahrgang",    num: true,  wert: p => +jahrgang(p) || 0 },
+  position:  { label: "Position",    num: false, wert: p => (p.hauptposition || "").toLowerCase() },
+  verein:    { label: "Verein",      num: false, wert: p => (p.verein || "").toLowerCase() },
+  pool:      { label: "Pool",        num: false, wert: p => POOL_REIHENFOLGE.indexOf(p.pool) },
+  gesamt:    { label: "Gesamt",      num: true,  wert: p => gesamtScore(p) },
+  potenzial: { label: "Potenzial",   num: true,  wert: p => potenzialScore(p) },
+  fit:       { label: "Fortuna-Fit", num: true,  wert: p => fortunaFit(p) },
+};
+
+let listenSort = ladeListenSort();
+function ladeListenSort() {
+  try {
+    const s = JSON.parse(localStorage.getItem(LISTEN_SORT_KEY));
+    if (s && LISTEN_SPALTEN[s.spalte]) return s;
+  } catch {}
+  return { spalte: "gesamt", absteigend: true };
+}
+
+function setListenSortierung(spalte) {
+  if (!LISTEN_SPALTEN[spalte]) return;
+  if (listenSort.spalte === spalte) {
+    listenSort.absteigend = !listenSort.absteigend;
+  } else {
+    listenSort = { spalte, absteigend: LISTEN_SPALTEN[spalte].num };
+  }
+  try { localStorage.setItem(LISTEN_SORT_KEY, JSON.stringify(listenSort)); } catch {}
+  renderSpielerTabelle();
+}
+window.setListenSortierung = setListenSortierung;
+
+function renderSpielerTabelle() {
+  const ziel = $("#spieler-tabelle");
+  if (ziel) ziel.innerHTML = spielerTabelle(gefilterteSpieler());
+}
 
 function viewSpielerListe() {
   const jahrgaenge = [...new Set(SPIELER.map(jahrgang))].sort().reverse();
@@ -685,17 +740,19 @@ function viewSpielerListe() {
         <button class="btn btn-secondary btn-sm" id="f-reset">Zurücksetzen</button>
       </div>
       <div id="spieler-tabelle"></div>
+      <div class="tabellen-hinweis">💡 Klick auf eine Spaltenüberschrift sortiert die Liste · Klick auf einen Spieler öffnet das Profil</div>
     </div>`;
 
-  const render = () => { $("#spieler-tabelle").innerHTML = spielerTabelle(gefilterteSpieler()); };
   for (const [id, key] of [["#f-suche", "suche"], ["#f-position", "position"], ["#f-jahrgang", "jahrgang"], ["#f-verein", "verein"], ["#f-gesamt", "minGesamt"], ["#f-potenzial", "minPotenzial"]]) {
-    $(id).addEventListener("input", e => { filter[key] = e.target.value; render(); });
+    $(id).addEventListener("input", e => { filter[key] = e.target.value; renderSpielerTabelle(); });
   }
   $("#f-reset").addEventListener("click", () => { filter = { suche: "", position: "", jahrgang: "", verein: "", minGesamt: "", minPotenzial: "" }; viewSpielerListe(); });
-  render();
+  renderSpielerTabelle();
 }
 
 function gefilterteSpieler() {
+  const spalte = LISTEN_SPALTEN[listenSort.spalte] || LISTEN_SPALTEN.gesamt;
+  const richtung = listenSort.absteigend ? -1 : 1;
   return SPIELER.filter(p => {
     const s = filter.suche.toLowerCase();
     if (s && !`${p.vorname} ${p.nachname} ${p.verein}`.toLowerCase().includes(s)) return false;
@@ -705,16 +762,32 @@ function gefilterteSpieler() {
     if (filter.minGesamt && gesamtScore(p) < +filter.minGesamt) return false;
     if (filter.minPotenzial && potenzialScore(p) < +filter.minPotenzial) return false;
     return true;
-  }).sort((a, b) => gesamtScore(b) - gesamtScore(a));
+  }).sort((a, b) => {
+    const wa = spalte.wert(a), wb = spalte.wert(b);
+    if (wa < wb) return -1 * richtung;
+    if (wa > wb) return 1 * richtung;
+    // Gleichstand: immer stabil nach Nachname sortieren
+    return `${a.nachname} ${a.vorname}`.localeCompare(`${b.nachname} ${b.vorname}`, "de");
+  });
 }
 
-function spielerTabelle(liste) {
+function spielerAvatar(p) {
+  return `<span class="avatar-sm">${p.foto
+    ? `<img src="${p.foto}" alt="${esc(p.vorname)} ${esc(p.nachname)}" loading="lazy">`
+    : esc(initialen(p))}</span>`;
+}
+
+function spielerTabelle(liste, sortierbar = true) {
   if (!liste.length) return `<div class="empty">Keine Spieler gefunden.</div>`;
-  return `<table><thead><tr>
-    <th>Spieler</th><th>Jahrgang</th><th>Position</th><th>Verein</th><th>Pool</th>
-    <th>Gesamt</th><th>Potenzial</th><th>Fortuna-Fit</th></tr></thead><tbody>
+  const kopf = Object.entries(LISTEN_SPALTEN).map(([key, sp]) => {
+    if (!sortierbar) return `<th>${sp.label}</th>`;
+    const aktiv = listenSort.spalte === key;
+    const pfeil = aktiv ? (listenSort.absteigend ? " ↓" : " ↑") : "";
+    return `<th class="sortierbar${aktiv ? " sortiert" : ""}" onclick="setListenSortierung('${key}')" title="Nach ${sp.label} sortieren">${sp.label}${pfeil}</th>`;
+  }).join("");
+  return `<table><thead><tr>${kopf}</tr></thead><tbody>
     ${liste.map(p => `<tr onclick="location.hash='#/spieler/${p.id}'">
-      <td><strong>${esc(p.vorname)} ${esc(p.nachname)}</strong></td>
+      <td><div class="spieler-zelle">${spielerAvatar(p)}<strong>${esc(p.vorname)} ${esc(p.nachname)}</strong></div></td>
       <td>${jahrgang(p)} (${alter(p)} J.)</td>
       <td>${esc(p.hauptposition)}</td>
       <td>${esc(p.verein)}</td>
@@ -2724,6 +2797,10 @@ window.benutzerLoeschen = benutzerLoeschen;
 
 function benutzerLoeschenBestaetigt(nutzername) {
   BENUTZER = BENUTZER.filter(b => b.nutzername !== nutzername);
+  // update() merged nur – der Eintrag muss explizit aus Firebase und IndexedDB raus,
+  // sonst taucht der Zugang beim nächsten Start (oder bei anderen Nutzern) wieder auf.
+  loescheBenutzerFirebase(nutzername);
+  indexedDBDelete("benutzer", nutzername);
   speichereBenutzer();
   schliesseModal();
   renderAdminTab();
@@ -3132,7 +3209,15 @@ function startApp() {
       ladeBenutzerFirebase(function(fbBenutzer) {
         if (fbBenutzer && fbBenutzer.length > 0) {
           BENUTZER = fbBenutzer;
+        } else {
+          // Firebase kennt noch keine Benutzer -> lokalen Stand einmalig hochladen
+          speichereBenutzerFirebase(BENUTZER);
         }
+        // Erst jetzt lastSeen schreiben: vorher würden wir einen veralteten
+        // lokalen Benutzerstand zurück in die Cloud drücken.
+        aktuellerBenutzerAktualisieren();
+        starteLiveSync();
+        starteVersionsUeberwachung();
         zeigeLadeOverlay(false);
         route();
       });
@@ -3145,10 +3230,93 @@ function startApp() {
   if (!hatFirebase) {
     // Kein Firebase konfiguriert – localStorage-Modus
     SPIELER = ladeSpieler();
+    aktuellerBenutzerAktualisieren();
+    starteVersionsUeberwachung();
     route();
   } else {
     zeigeLadeOverlay(true);
   }
+}
+
+// ---------- Versions-Check ----------
+// Die App wird laufend weiterentwickelt. Browser (besonders auf dem Handy)
+// halten app.js/styles.css aber lange im Cache – dann arbeiten zwei Nutzer
+// mit unterschiedlichen Programmständen auf derselben Datenbank.
+// Deshalb: version.json ungecacht abfragen und bei Abweichung zum Neuladen auffordern.
+const APP_VERSION = "1.1.0";
+
+async function pruefeVersion() {
+  try {
+    const res = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return;
+    const info = await res.json();
+    if (info.version && info.version !== APP_VERSION) zeigeUpdateHinweis(info.version);
+  } catch (e) { /* offline – beim nächsten Versuch erneut */ }
+}
+
+function zeigeUpdateHinweis(neueVersion) {
+  if (document.getElementById("update-hinweis")) return;
+  const el = document.createElement("div");
+  el.id = "update-hinweis";
+  el.className = "update-hinweis";
+  el.innerHTML = `<span>🔄 Neue Version ${esc(neueVersion)} verfügbar – du arbeitest noch mit ${APP_VERSION}.</span>
+    <button class="btn btn-sm" onclick="neuLaden()">Jetzt aktualisieren</button>`;
+  document.body.appendChild(el);
+}
+
+function neuLaden() {
+  // Query-String erzwingt einen frischen Abruf von index.html samt Assets
+  location.replace(location.pathname + "?r=" + Date.now() + location.hash);
+}
+window.neuLaden = neuLaden;
+
+function starteVersionsUeberwachung() {
+  pruefeVersion();
+  setInterval(pruefeVersion, 5 * 60 * 1000);
+  window.addEventListener("focus", pruefeVersion);
+}
+
+// ---------- Live-Synchronisation ----------
+// Benutzer, Rechte, Score-Gewichtung und Feedback-Links hängen an Firebase-Listenern,
+// damit alle offenen Browser denselben Stand haben – ohne Neuladen.
+// Fehlt ein Konfigurationszweig in Firebase noch, legt ihn genau ein Admin an –
+// so bestimmt nicht der zufällig erste Browser den gemeinsamen Stand.
+function seedeFallsAdmin(schreibfunktion, wert) {
+  const n = aktuellerNutzer();
+  if (n && n.rolle === "Administrator") schreibfunktion(wert);
+}
+
+function starteLiveSync() {
+  abonniereBenutzer(function(fbBenutzer) {
+    if (!fbBenutzer || !fbBenutzer.length) return;
+    BENUTZER = fbBenutzer;
+    localStorage.setItem(USERS_KEY, JSON.stringify(BENUTZER));
+    // Nur neu zeichnen, wenn die Benutzerliste gerade sichtbar ist –
+    // sonst würde jedes fremde lastSeen-Update die Ansicht zurücksetzen.
+    if (location.hash.startsWith("#/admin")) renderAdminTab();
+  });
+
+  abonniereBerechtigungen(function(b) {
+    const vorher = JSON.stringify(BERECHTIGUNGEN);
+    BERECHTIGUNGEN = b;
+    localStorage.setItem(BERECHTIGUNGEN_KEY, JSON.stringify(b));
+    // Nur lokal spiegeln – nicht zurückschreiben, sonst Echo-Schleife
+    for (const [rolle, rechte] of Object.entries(b)) indexedDBPut("berechtigungen", { rolle, rechte });
+    if (JSON.stringify(b) !== vorher) route();
+  });
+
+  abonniereScoreConfig(function(cfg) {
+    if (!cfg) { seedeFallsAdmin(speichereScoreConfigFirebase, SCORE_CONFIG); return; }
+    SCORE_CONFIG = { ...DEFAULT_SCORE_CONFIG, ...cfg };
+    localStorage.setItem(SCORE_CONFIG_KEY, JSON.stringify(SCORE_CONFIG));
+    route();
+  });
+
+  abonniereFeedbackLinks(function(links) {
+    if (!links) { seedeFallsAdmin(speichereFeedbackLinksFirebase, FEEDBACK_LINKS); return; }
+    FEEDBACK_LINKS = { ...DEFAULT_FEEDBACK_LINKS, ...links };
+    localStorage.setItem(FEEDBACK_LINKS_KEY, JSON.stringify(FEEDBACK_LINKS));
+  });
 }
 
 // ---------- Init ----------
@@ -3170,7 +3338,7 @@ $("#resetData").addEventListener("click", () => {
     await indexedDBInit();
     BENUTZER = await ladeBenutzer();
     BERECHTIGUNGEN = await ladeBerechtigungen();
-    aktuellerBenutzerAktualisieren();
+    // aktuellerBenutzerAktualisieren() folgt erst nach dem Firebase-Load in startApp()
   } catch (e) {
     console.error("IndexedDB Init Fehler:", e);
   }
