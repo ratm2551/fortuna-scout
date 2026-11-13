@@ -476,6 +476,20 @@ function abonniereScoreConfig(callback) {
   return true;
 }
 
+function speichereModuleConfigFirebase(config) {
+  if (!_fbDb || !config) return;
+  _fbDb.ref('moduleConfig').set(config)
+    .catch(function(e) { console.error('Firebase Module-Config Schreibfehler:', e); });
+}
+
+function abonniereModuleConfig(callback) {
+  if (!_fbDb) return false;
+  _fbDb.ref('moduleConfig').on('value', function(snapshot) {
+    callback(snapshot.val());
+  }, function(e) { console.error('Firebase Module-Config Sync-Fehler:', e); });
+  return true;
+}
+
 function speichereFeedbackLinksFirebase(links) {
   if (!_fbDb || !links) return;
   _fbDb.ref('feedbackLinks').set(links)
