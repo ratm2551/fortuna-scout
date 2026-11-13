@@ -269,6 +269,26 @@ function speichereScoreConfig() {
 }
 let SCORE_CONFIG = ladeScoreConfig();
 
+// ---------- Module (global ein-/ausblendbar) ----------
+// Module blenden nur die Anzeige aus. Gespeicherte Daten (Ratings, Session-Bewertung,
+// Score-Gewichtung) bleiben unangetastet und sind beim Wiedereinschalten sofort wieder da.
+const MODULE_CONFIG_KEY = "fortuna-module-config-v1";
+const MODULE = [
+  { id: "fortunaScore", titel: "Fortuna-Score", beschreibung: "Gesamt-, Potenzial- und Fortuna-Fit-Score in Listen, Dashboard, Profil, Vergleich, Profilsuche und CSV-Export." },
+  { id: "bewertung",    titel: "Spielerbewertung", beschreibung: "Attribute, Session-Badge, Gesamtbewertung pro Session, Feedback-PDF und KI-Kurzprofil." },
+];
+const DEFAULT_MODULE_CONFIG = { fortunaScore: true, bewertung: true };
+function ladeModuleConfig() {
+  try { const s = localStorage.getItem(MODULE_CONFIG_KEY); if (s) return { ...DEFAULT_MODULE_CONFIG, ...JSON.parse(s) }; } catch {}
+  return { ...DEFAULT_MODULE_CONFIG };
+}
+let MODULE_CONFIG = ladeModuleConfig();
+function modulAktiv(id) { return MODULE_CONFIG[id] !== false; }
+function speichereModuleConfig() {
+  localStorage.setItem(MODULE_CONFIG_KEY, JSON.stringify(MODULE_CONFIG));
+  speichereModuleConfigFirebase(MODULE_CONFIG);
+}
+
 function generiererFeedback(bewertung) {
   if (!bewertung || bewertung < 1 || bewertung > 10) return "";
   let gruppe;
@@ -499,6 +519,9 @@ function updateNav() {
   nav.querySelector('a[data-route="admin"]')?.remove();
   nav.querySelector(".nav-admin-section")?.remove();
   const nutzer = aktuellerNutzer();
+  // Der Demodaten-Reset schreibt in die gemeinsame Datenbank – nur für Administratoren sichtbar
+  const resetBtn = document.getElementById("resetData");
+  if (resetBtn) resetBtn.style.display = nutzer?.rolle === "Administrator" ? "" : "none";
   if (nutzer?.rolle === "Administrator") {
     const sec = document.createElement("div");
     sec.className = "nav-section nav-admin-section";
@@ -618,7 +641,7 @@ function viewDashboard() {
     } else if ((HEUTE - new Date(letzter)) / 86400000 > 45) {
       warnungen.push({ cls: "", text: `<span class="link" onclick="location.hash='#/spieler/${p.id}'">${esc(p.vorname)} ${esc(p.nachname)}</span> seit ${fmtDatum(letzter)} nicht mehr beobachtet.` });
     }
-    if (potenzialScore(p) >= 85 && p.pool === "beobachten") {
+    if (modulAktiv("fortunaScore") && potenzialScore(p) >= 85 && p.pool === "beobachten") {
       warnungen.push({ cls: "gruen", text: `<span class="link" onclick="location.hash='#/spieler/${p.id}'">${esc(p.vorname)} ${esc(p.nachname)}</span>: Potenzial-Score ${potenzialScore(p)} – Probetraining empfohlen.` });
     }
   }
@@ -639,7 +662,7 @@ function viewDashboard() {
       ${kpi(SPIELER.length, "Spieler im System", "#/spieler")}
       ${kpi(neue30, "Neue Spieler (30 Tage)", "#/spieler")}
       ${kpi(offen, "Beobachtungen offen", "#/talentpool")}
-      ${kpi(hohesPotenzial, "Hohes Potenzial (≥80)", "#/spieler")}
+      ${modulAktiv("fortunaScore") ? kpi(hohesPotenzial, "Hohes Potenzial (≥80)", "#/spieler") : ""}
       ${kpi(probeEmpf, "Probetraining empfohlen", "#/probetraining")}
       ${kpi(vertrag12, "Vertragsende ≤ 12 Monate", "#/spieler")}
     </div>
@@ -657,10 +680,10 @@ function viewDashboard() {
         </tbody></table>` : `<div class="empty">Noch keine Berichte.</div>`}
       </div>
     </div>
-    <div class="card mt">
+    ${modulAktiv("fortunaScore") ? `<div class="card mt">
       <h3>🏆 Top-Talente nach Potenzial</h3>
       ${spielerTabelle(SPIELER.filter(p => p.pool !== "archiv").sort((a, b) => potenzialScore(b) - potenzialScore(a)).slice(0, 5), false)}
-    </div>`;
+    </div>` : ""}`;
 }
 function kpi(wert, label, ziel) {
   return `<div class="kpi" onclick="location.hash='${ziel}'"><div class="kpi-value">${wert}</div><div class="kpi-label">${label}</div></div>`;
@@ -679,10 +702,19 @@ const LISTEN_SPALTEN = {
   position:  { label: "Position",    num: false, wert: p => (p.hauptposition || "").toLowerCase() },
   verein:    { label: "Verein",      num: false, wert: p => (p.verein || "").toLowerCase() },
   pool:      { label: "Pool",        num: false, wert: p => POOL_REIHENFOLGE.indexOf(p.pool) },
-  gesamt:    { label: "Gesamt",      num: true,  wert: p => gesamtScore(p) },
-  potenzial: { label: "Potenzial",   num: true,  wert: p => potenzialScore(p) },
-  fit:       { label: "Fortuna-Fit", num: true,  wert: p => fortunaFit(p) },
+  gesamt:    { label: "Gesamt",      num: true,  modul: "fortunaScore", wert: p => gesamtScore(p) },
+  potenzial: { label: "Potenzial",   num: true,  modul: "fortunaScore", wert: p => potenzialScore(p) },
+  fit:       { label: "Fortuna-Fit", num: true,  modul: "fortunaScore", wert: p => fortunaFit(p) },
 };
+
+// Spalten, deren Modul ausgeblendet ist, erscheinen weder in der Liste noch als Sortierung
+function listenSpalten() {
+  return Object.entries(LISTEN_SPALTEN).filter(([, sp]) => !sp.modul || modulAktiv(sp.modul));
+}
+function listenSortierungAktiv() {
+  const sp = LISTEN_SPALTEN[listenSort.spalte];
+  return !!sp && (!sp.modul || modulAktiv(sp.modul));
+}
 
 let listenSort = ladeListenSort();
 function ladeListenSort() {
@@ -733,10 +765,10 @@ function viewSpielerListe() {
           <select id="f-jahrgang"><option value="">Alle</option>${jahrgaenge.map(j => `<option ${filter.jahrgang === j ? "selected" : ""}>${j}</option>`).join("")}</select></div>
         <div class="field"><label>Verein</label>
           <select id="f-verein"><option value="">Alle</option>${vereine.map(v => `<option ${filter.verein === v ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></div>
-        <div class="field"><label>Min. Gesamt</label>
+        ${modulAktiv("fortunaScore") ? `<div class="field"><label>Min. Gesamt</label>
           <input id="f-gesamt" type="number" min="0" max="100" style="width:90px" value="${filter.minGesamt}"></div>
         <div class="field"><label>Min. Potenzial</label>
-          <input id="f-potenzial" type="number" min="0" max="100" style="width:90px" value="${filter.minPotenzial}"></div>
+          <input id="f-potenzial" type="number" min="0" max="100" style="width:90px" value="${filter.minPotenzial}"></div>` : ""}
         <button class="btn btn-secondary btn-sm" id="f-reset">Zurücksetzen</button>
       </div>
       <div id="spieler-tabelle"></div>
@@ -744,23 +776,26 @@ function viewSpielerListe() {
     </div>`;
 
   for (const [id, key] of [["#f-suche", "suche"], ["#f-position", "position"], ["#f-jahrgang", "jahrgang"], ["#f-verein", "verein"], ["#f-gesamt", "minGesamt"], ["#f-potenzial", "minPotenzial"]]) {
-    $(id).addEventListener("input", e => { filter[key] = e.target.value; renderSpielerTabelle(); });
+    $(id)?.addEventListener("input", e => { filter[key] = e.target.value; renderSpielerTabelle(); });
   }
   $("#f-reset").addEventListener("click", () => { filter = { suche: "", position: "", jahrgang: "", verein: "", minGesamt: "", minPotenzial: "" }; viewSpielerListe(); });
   renderSpielerTabelle();
 }
 
 function gefilterteSpieler() {
-  const spalte = LISTEN_SPALTEN[listenSort.spalte] || LISTEN_SPALTEN.gesamt;
-  const richtung = listenSort.absteigend ? -1 : 1;
+  // Ist die gewählte Sortierspalte ausgeblendet, wird stabil nach Name sortiert
+  const sortAktiv = listenSortierungAktiv();
+  const spalte = sortAktiv ? LISTEN_SPALTEN[listenSort.spalte] : LISTEN_SPALTEN.spieler;
+  const richtung = sortAktiv && listenSort.absteigend ? -1 : 1;
+  const scoreModul = modulAktiv("fortunaScore");
   return SPIELER.filter(p => {
     const s = filter.suche.toLowerCase();
     if (s && !`${p.vorname} ${p.nachname} ${p.verein}`.toLowerCase().includes(s)) return false;
     if (filter.position && p.hauptposition !== filter.position && !p.nebenpositionen.includes(filter.position)) return false;
     if (filter.jahrgang && jahrgang(p) !== filter.jahrgang) return false;
     if (filter.verein && p.verein !== filter.verein) return false;
-    if (filter.minGesamt && gesamtScore(p) < +filter.minGesamt) return false;
-    if (filter.minPotenzial && potenzialScore(p) < +filter.minPotenzial) return false;
+    if (scoreModul && filter.minGesamt && gesamtScore(p) < +filter.minGesamt) return false;
+    if (scoreModul && filter.minPotenzial && potenzialScore(p) < +filter.minPotenzial) return false;
     return true;
   }).sort((a, b) => {
     const wa = spalte.wert(a), wb = spalte.wert(b);
@@ -779,7 +814,7 @@ function spielerAvatar(p) {
 
 function spielerTabelle(liste, sortierbar = true) {
   if (!liste.length) return `<div class="empty">Keine Spieler gefunden.</div>`;
-  const kopf = Object.entries(LISTEN_SPALTEN).map(([key, sp]) => {
+  const kopf = listenSpalten().map(([key, sp]) => {
     if (!sortierbar) return `<th>${sp.label}</th>`;
     const aktiv = listenSort.spalte === key;
     const pfeil = aktiv ? (listenSort.absteigend ? " ↓" : " ↑") : "";
@@ -792,9 +827,9 @@ function spielerTabelle(liste, sortierbar = true) {
       <td>${esc(p.hauptposition)}</td>
       <td>${esc(p.verein)}</td>
       <td><span class="badge ${poolBadge(p.pool)}">${POOL_LISTEN[p.pool].titel}</span></td>
-      <td>${scorePill(gesamtScore(p))}</td>
+      ${modulAktiv("fortunaScore") ? `<td>${scorePill(gesamtScore(p))}</td>
       <td>${scorePill(potenzialScore(p))}</td>
-      <td>${scorePill(fortunaFit(p))}</td>
+      <td>${scorePill(fortunaFit(p))}</td>` : ""}
     </tr>`).join("")}
   </tbody></table>`;
 }
@@ -809,6 +844,7 @@ function viewSpielerDetail(id, tab) {
   const p = findSpieler(id);
   if (!p) { main.innerHTML = `<div class="empty">Spieler nicht gefunden.</div>`; return; }
   if (tab) aktiverTab = tab;
+  if (aktiverTab === "attribute" && !modulAktiv("bewertung")) aktiverTab = "profil";
 
   main.innerHTML = `
     <div class="mb"><a class="link" href="#/spieler">← Zur Spielerdatenbank</a></div>
@@ -830,16 +866,16 @@ function viewSpielerDetail(id, tab) {
             ${Object.entries(POOL_LISTEN).map(([k, v]) => `<option value="${k}" ${p.pool === k ? "selected" : ""}>${v.titel}</option>`).join("")}
           </select>
           ${hatRecht("spieler_bearbeiten") ? `<button class="btn btn-ghost btn-sm" onclick="modalSpielerBearbeiten('${p.id}')">✏️ Bearbeiten</button>` : ""}
-          ${hatRecht("spieler_bearbeiten") ? `<button class="btn btn-ghost btn-sm" onclick="modalAttributeBearbeiten('${p.id}')">📊 Attribute</button>` : ""}
+          ${hatRecht("spieler_bearbeiten") && modulAktiv("bewertung") ? `<button class="btn btn-ghost btn-sm" onclick="modalAttributeBearbeiten('${p.id}')">📊 Attribute</button>` : ""}
           ${hatRecht("spieler_loeschen") ? `<button class="btn btn-ghost btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="spielerLoeschen('${p.id}')">🗑 Löschen</button>` : ""}
-          ${p.gesamtbewertungSession ? `<button class="btn btn-sm" style="background:#4f46e5;border-color:#4f46e5;color:#fff" onclick="feedbackExportieren('${p.id}')">📄 Feedback-PDF</button>` : ""}
+          ${modulAktiv("bewertung") && p.gesamtbewertungSession ? `<button class="btn btn-sm" style="background:#4f46e5;border-color:#4f46e5;color:#fff" onclick="feedbackExportieren('${p.id}')">📄 Feedback-PDF</button>` : ""}
         </div>
       </div>
-      <div class="scores-row">
+      ${modulAktiv("fortunaScore") ? `<div class="scores-row">
         <div class="score-box"><div class="val" style="color:var(--rot)">${gesamtScore(p)}</div><div class="lbl">Gesamt</div></div>
         <div class="score-box"><div class="val" style="color:var(--gruen)">${potenzialScore(p)}</div><div class="lbl">Potenzial</div></div>
         <div class="score-box"><div class="val">${fortunaFit(p)}</div><div class="lbl">Fortuna-Fit</div></div>
-      </div>
+      </div>` : ""}
     </div>
     <div class="tabs">
       ${[
@@ -850,7 +886,8 @@ function viewSpielerDetail(id, tab) {
         ["entwicklung","Entwicklungsmonitor",                             "entwicklung"],
         ["extern",     `Externe Quellen (${(p.externeQuellen||[]).length})`, null],
         ["notizen",    "Notizen",                                         null],
-      ].filter(([,,r]) => !r || hatRecht(r))
+      ].filter(([k]) => k !== "attribute" || modulAktiv("bewertung"))
+       .filter(([,,r]) => !r || hatRecht(r))
        .map(([k, t]) => `<button class="${aktiverTab === k ? "active" : ""}" onclick="viewSpielerDetail('${p.id}','${k}')">${t}</button>`).join("")}
     </div>
     <div id="tab-inhalt"></div>`;
@@ -1087,8 +1124,8 @@ function tabProfil(p) {
       ${zeile("Geburtsdatum", `${fmtDatum(p.geburtsdatum)} (${alter(p)} Jahre)`)}
       ${zeile("Nationalität", esc(p.nationalitaet))}
       ${zeile("Talent-Kategorie", p.talent ? `<span class="badge ${p.talent==="A"?"badge-gruen":p.talent==="B"?"badge-gelb":"badge-grau"}">${p.talent}</span>` : "–")}
-      ${zeile("Session-Badge", p.sessionBatch ? esc(p.sessionBatch) : "–")}
-      ${zeile("Gesamtbewertung pro Session", p.gesamtbewertungSession ? `<span class="badge ${p.gesamtbewertungSession <= 3 ? "badge-gruen" : p.gesamtbewertungSession <= 6 ? "badge-gelb" : "badge-grau"}">${p.gesamtbewertungSession} / 10</span>` : "–")}
+      ${modulAktiv("bewertung") ? zeile("Session-Badge", p.sessionBatch ? esc(p.sessionBatch) : "–") : ""}
+      ${modulAktiv("bewertung") ? zeile("Gesamtbewertung pro Session", p.gesamtbewertungSession ? `<span class="badge ${p.gesamtbewertungSession <= 3 ? "badge-gruen" : p.gesamtbewertungSession <= 6 ? "badge-gelb" : "badge-grau"}">${p.gesamtbewertungSession} / 10</span>` : "–") : ""}
       ${zeile("Größe / Gewicht", `${p.groesse} cm / ${p.gewicht} kg`)}
       ${zeile("Starker Fuß", esc(p.starkerFuss))}
       ${zeile("Schwacher Fuß", `<span class="stars">${"★".repeat(p.schwacherFuss)}${"☆".repeat(5 - p.schwacherFuss)}</span>`)}
@@ -1115,7 +1152,7 @@ function tabProfil(p) {
     </div>
     <div style="font-size:12px;color:var(--muted);margin-top:10px">Echtes StatsBomb-xG-Modell aus Schussdaten · Tore: ${p.sbRef.tore} · Assists: ${p.sbRef.assists} · Einsätze im Datensatz: ${p.sbRef.einsaetze}</div>
   </div>` : ""}
-  <div class="card mt"><h3>🤖 KI-Kurzprofil (Prototyp)</h3><p style="font-size:13.5px;line-height:1.6">${kiKurzprofil(p)}</p></div>
+  ${modulAktiv("fortunaScore") && modulAktiv("bewertung") ? `<div class="card mt"><h3>🤖 KI-Kurzprofil (Prototyp)</h3><p style="font-size:13.5px;line-height:1.6">${kiKurzprofil(p)}</p></div>` : ""}
   ${hatRecht("spieler_bearbeiten") ? renderStatistikFelder(p) : ""}`;
 }
 function renderStatistikFelder(p) {
@@ -1485,13 +1522,15 @@ function viewTalentpool() {
     </div>
     <div class="kanban">
       ${Object.entries(POOL_LISTEN).map(([key, liste]) => {
-        const spieler = SPIELER.filter(p => p.pool === key).sort((a, b) => potenzialScore(b) - potenzialScore(a));
+        const spieler = SPIELER.filter(p => p.pool === key).sort((a, b) => modulAktiv("fortunaScore")
+          ? potenzialScore(b) - potenzialScore(a)
+          : `${a.nachname} ${a.vorname}`.localeCompare(`${b.nachname} ${b.vorname}`, "de"));
         return `<div class="kanban-col">
           <h3>${liste.titel} <span class="badge badge-grau">${spieler.length}</span></h3>
           <div class="col-desc">${liste.desc}</div>
           ${spieler.map(p => `<div class="kanban-card">
             <div class="kc-name" onclick="location.hash='#/spieler/${p.id}'">${esc(p.vorname)} ${esc(p.nachname)}</div>
-            <div class="kc-meta">${esc(p.hauptposition)} · ${jahrgang(p)} · Potenzial ${potenzialScore(p)}</div>
+            <div class="kc-meta">${esc(p.hauptposition)} · ${jahrgang(p)}${modulAktiv("fortunaScore") ? ` · Potenzial ${potenzialScore(p)}` : ""}</div>
             <select onchange="setPool('${p.id}', this.value)">
               ${Object.entries(POOL_LISTEN).map(([k, v]) => `<option value="${k}" ${k === key ? "selected" : ""}>${v.titel}</option>`).join("")}
             </select>
@@ -1542,28 +1581,37 @@ function renderVergleich() {
 
   const achsen = [["technik", "Technik"], ["taktik", "Taktik"], ["athletik", "Athletik"], ["mentalitaet", "Mentalität"], ["potenzial", "Potenzial"]];
   const daten = spieler.map(p => achsen.map(([k]) => gruppenSchnitt(p, k)));
+  const mitScore = modulAktiv("fortunaScore"), mitBewertung = modulAktiv("bewertung");
+  const stammZeile = (label, werte) => `<tr><td>${label}</td>${werte.map(w => `<td>${esc(String(w || "–"))}</td>`).join("")}</tr>`;
 
   $("#vergleich-inhalt").innerHTML = `
-    <div class="radar-wrap">${radarChart(achsen.map(a => a[1]), daten)}</div>
+    ${mitBewertung ? `<div class="radar-wrap">${radarChart(achsen.map(a => a[1]), daten)}</div>
     <div class="legend">${spieler.map((p, i) =>
-      `<span><i style="background:${VERGLEICH_FARBEN[i]}"></i>${esc(p.vorname)} ${esc(p.nachname)}</span>`).join("")}</div>
-    <h3 class="mt">Attributvergleich</h3>
-    <table class="compare-table"><thead><tr><th>Attribut</th>${spieler.map(p => `<th>${esc(p.nachname)}</th>`).join("")}</tr></thead><tbody>
-      ${vergleichZeile("Gesamt-Score", spieler.map(gesamtScore))}
-      ${vergleichZeile("Potenzial-Score", spieler.map(potenzialScore))}
-      ${vergleichZeile("Fortuna-Fit", spieler.map(fortunaFit))}
-      ${Object.values(RATING_MODELL).flatMap(grp =>
+      `<span><i style="background:${VERGLEICH_FARBEN[i]}"></i>${esc(p.vorname)} ${esc(p.nachname)}</span>`).join("")}</div>` : ""}
+    <h3 class="mt">${mitBewertung ? "Attributvergleich" : "Vergleich"}</h3>
+    <table class="compare-table"><thead><tr><th>${mitBewertung ? "Attribut" : "Merkmal"}</th>${spieler.map(p => `<th>${esc(p.nachname)}</th>`).join("")}</tr></thead><tbody>
+      ${mitBewertung ? "" : [
+        stammZeile("Position", spieler.map(p => p.hauptposition)),
+        stammZeile("Jahrgang", spieler.map(jahrgang)),
+        stammZeile("Verein", spieler.map(p => p.verein)),
+        stammZeile("Liga", spieler.map(p => p.liga)),
+        stammZeile("Pool", spieler.map(p => POOL_LISTEN[p.pool]?.titel || p.pool)),
+      ].join("")}
+      ${mitScore ? vergleichZeile("Gesamt-Score", spieler.map(gesamtScore)) : ""}
+      ${mitScore ? vergleichZeile("Potenzial-Score", spieler.map(potenzialScore)) : ""}
+      ${mitScore ? vergleichZeile("Fortuna-Fit", spieler.map(fortunaFit)) : ""}
+      ${mitBewertung ? Object.values(RATING_MODELL).flatMap(grp =>
         Object.entries(grp.attribute).map(([k, label]) =>
-          vergleichZeile(label, spieler.map(p => p.ratings[k] || 0)))).join("")}
+          vergleichZeile(label, spieler.map(p => p.ratings[k] || 0)))).join("") : ""}
     </tbody></table>
-    <h3 class="mt">Stärken / Schwächen</h3>
+    ${mitBewertung ? `<h3 class="mt">Stärken / Schwächen</h3>
     <div class="grid-3">${spieler.map(p => `<div class="card">
       <h3>${esc(p.vorname)} ${esc(p.nachname)}</h3>
       <div class="rs-label" style="font-size:11.5px;font-weight:700;color:var(--gruen)">STÄRKEN</div>
       <p style="font-size:13px;margin-bottom:8px">${topAttribute(p, 3).map(a => `${a.label} (${a.wert})`).join(" · ")}</p>
       <div class="rs-label" style="font-size:11.5px;font-weight:700;color:var(--rot)">SCHWÄCHEN</div>
       <p style="font-size:13px">${topAttribute(p, 3, true).map(a => `${a.label} (${a.wert})`).join(" · ")}</p>
-    </div>`).join("")}</div>`;
+    </div>`).join("")}</div>` : ""}`;
 }
 
 function vergleichZeile(label, werte) {
@@ -1610,6 +1658,14 @@ function viewSpielerdatenbank() {
   const gespeichert = localStorage.getItem('spielerdatenbankSort');
   if (gespeichert) spielerdatenbankSort = JSON.parse(gespeichert);
 
+  // Ist die gespeicherte Sortierspalte ausgeblendet, stattdessen nach Name sortieren
+  const zeigeScore = modulAktiv("fortunaScore"), zeigeBewertung = modulAktiv("bewertung");
+  const BEWERTUNGS_SPALTEN = ["technik", "passspiel", "dribbling", "athletik", "mentalitaet"];
+  if ((spielerdatenbankSort.spalte === 'gesamtstaerke' && !zeigeScore) ||
+      (BEWERTUNGS_SPALTEN.includes(spielerdatenbankSort.spalte) && !zeigeBewertung)) {
+    spielerdatenbankSort = { spalte: 'name', absteigend: false };
+  }
+
   // Sortiere Spieler
   let sortiert = [...SPIELER];
   sortiert.sort((a, b) => {
@@ -1646,12 +1702,12 @@ function viewSpielerdatenbank() {
           <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('alter');">Alter${pfeil('alter')}</th>
           <th style="padding:12px;text-align:left;cursor:pointer;font-weight:600;width:120px;user-select:none" onclick="setSortierung('position');">Position${pfeil('position')}</th>
           <th style="padding:12px;text-align:left;cursor:pointer;font-weight:600;user-select:none" onclick="setSortierung('verein');">Verein${pfeil('verein')}</th>
-          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:100px;user-select:none" onclick="setSortierung('gesamtstaerke');">⭐ Gesamt${pfeil('gesamtstaerke')}</th>
-          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('technik');">Technik${pfeil('technik')}</th>
+          ${zeigeScore ? `<th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:100px;user-select:none" onclick="setSortierung('gesamtstaerke');">⭐ Gesamt${pfeil('gesamtstaerke')}</th>` : ""}
+          ${zeigeBewertung ? `<th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('technik');">Technik${pfeil('technik')}</th>
           <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('passspiel');">Passspiel${pfeil('passspiel')}</th>
           <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('dribbling');">Dribbling${pfeil('dribbling')}</th>
           <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('athletik');">Athletik${pfeil('athletik')}</th>
-          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('mentalitaet');">Mentalität${pfeil('mentalitaet')}</th>
+          <th style="padding:12px;text-align:center;cursor:pointer;font-weight:600;width:80px;user-select:none" onclick="setSortierung('mentalitaet');">Mentalität${pfeil('mentalitaet')}</th>` : ""}
         </tr>
       </thead>
       <tbody>
@@ -1662,12 +1718,12 @@ function viewSpielerdatenbank() {
             <td style="padding:12px;text-align:center;color:var(--muted)">${jahrgang(p)}</td>
             <td style="padding:12px;font-size:13px">${esc(p.hauptposition || '–')}</td>
             <td style="padding:12px;font-size:13px;color:var(--muted)">${esc(p.verein || '–')}</td>
-            <td style="padding:12px;text-align:center;font-weight:600;color:var(--gruen)">${gesamtScore(p).toFixed(1)}</td>
-            <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.technik || 0}</td>
+            ${zeigeScore ? `<td style="padding:12px;text-align:center;font-weight:600;color:var(--gruen)">${gesamtScore(p).toFixed(1)}</td>` : ""}
+            ${zeigeBewertung ? `<td style="padding:12px;text-align:center;font-weight:600">${p.ratings.technik || 0}</td>
             <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.passspiel || 0}</td>
             <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.dribbling || 0}</td>
             <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.athletik || 0}</td>
-            <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.mentalitaet || 0}</td>
+            <td style="padding:12px;text-align:center;font-weight:600">${p.ratings.mentalitaet || 0}</td>` : ""}
           </tr>
         `).join('')}
       </tbody>
@@ -1753,10 +1809,10 @@ function viewProfilsuche() {
           <input id="ps-maxMarktwert" type="number" min="0" step="50000" placeholder="z.B. 5000000" value="${psKriterien.maxMarktwert}"></div>
         <div class="field"><label>Vertragsende vor</label>
           <input id="ps-vertragsendeVor" type="date" value="${psKriterien.vertragsendeVor}"></div>
-        <div class="field"><label>Min. Gesamt-Score</label>
+        ${modulAktiv("fortunaScore") ? `<div class="field"><label>Min. Gesamt-Score</label>
           <input id="ps-minGesamt" type="number" min="0" max="100" value="${psKriterien.minGesamt}"></div>
         <div class="field"><label>Min. Potenzial-Score</label>
-          <input id="ps-minPotenzial" type="number" min="0" max="100" value="${psKriterien.minPotenzial}"></div>
+          <input id="ps-minPotenzial" type="number" min="0" max="100" value="${psKriterien.minPotenzial}"></div>` : ""}
         <div class="field"><label>Min. xG <span class="badge badge-gelb" style="font-size:9.5px">Exp.</span></label>
           <input id="ps-minXg" type="number" min="0" step="0.1" value="${psKriterien.minXg}"></div>
         <div class="field"><label>Min. xA <span class="badge badge-gelb" style="font-size:9.5px">Exp.</span></label>
@@ -1773,8 +1829,8 @@ function viewProfilsuche() {
 
   const ids = ["position", "minJahrgang", "maxJahrgang", "maxMarktwert", "vertragsendeVor", "minGesamt", "minPotenzial", "minXg", "minXa", "minTore", "minAssists"];
   for (const k of ids) {
-    $(`#ps-${k}`).addEventListener("input", e => { psKriterien[k] = e.target.value; renderPsErgebnis(); });
-    $(`#ps-${k}`).addEventListener("change", e => { psKriterien[k] = e.target.value; renderPsErgebnis(); });
+    $(`#ps-${k}`)?.addEventListener("input", e => { psKriterien[k] = e.target.value; renderPsErgebnis(); });
+    $(`#ps-${k}`)?.addEventListener("change", e => { psKriterien[k] = e.target.value; renderPsErgebnis(); });
   }
   $("#ps-reset").addEventListener("click", () => {
     psKriterien = { position: "", minJahrgang: "", maxJahrgang: "", maxMarktwert: "", vertragsendeVor: "", minGesamt: "", minPotenzial: "", minXg: "", minXa: "", minTore: "", minAssists: "" };
@@ -1792,8 +1848,8 @@ function psPasstKriterien(p) {
   if (k.maxJahrgang && jahrgang(p) !== "–" && jahrgang(p) > k.maxJahrgang) return false;
   if (k.maxMarktwert && (p.marktwert == null || p.marktwert > +k.maxMarktwert)) return false;
   if (k.vertragsendeVor && (!p.vertragsende || p.vertragsende > k.vertragsendeVor)) return false;
-  if (k.minGesamt && gesamtScore(p) < +k.minGesamt) return false;
-  if (k.minPotenzial && potenzialScore(p) < +k.minPotenzial) return false;
+  if (modulAktiv("fortunaScore") && k.minGesamt && gesamtScore(p) < +k.minGesamt) return false;
+  if (modulAktiv("fortunaScore") && k.minPotenzial && potenzialScore(p) < +k.minPotenzial) return false;
   if (k.minXg && (xg == null || xg < +k.minXg)) return false;
   if (k.minXa && (xa == null || xa < +k.minXa)) return false;
   if (k.minTore && tore < +k.minTore) return false;
@@ -1804,7 +1860,10 @@ function psPasstKriterien(p) {
 function renderPsErgebnis() {
   const box = $("#ps-ergebnis");
   if (!box) return;
-  const treffer = SPIELER.filter(psPasstKriterien).sort((a, b) => fortunaFit(b) - fortunaFit(a));
+  const mitScore = modulAktiv("fortunaScore");
+  const treffer = SPIELER.filter(psPasstKriterien).sort((a, b) => mitScore
+    ? fortunaFit(b) - fortunaFit(a)
+    : `${a.nachname} ${a.vorname}`.localeCompare(`${b.nachname} ${b.vorname}`, "de"));
   const irgendeinKriteriumGesetzt = Object.values(psKriterien).some(v => v !== "");
 
   if (!irgendeinKriteriumGesetzt) {
@@ -1814,10 +1873,10 @@ function renderPsErgebnis() {
 
   box.innerHTML = `<div class="card">
     <div class="flex-between mb"><h3 style="margin:0">Treffer (${treffer.length})</h3>
-      <span style="font-size:12px;color:var(--muted)">Sortiert nach Fortuna-Fit</span></div>
+      <span style="font-size:12px;color:var(--muted)">Sortiert nach ${mitScore ? "Fortuna-Fit" : "Name"}</span></div>
     ${treffer.length ? `<table><thead><tr>
       <th>Spieler</th><th>Position</th><th>Jahrgang</th><th>Marktwert</th><th>Vertragsende</th>
-      <th>Gesamt</th><th>Potenzial</th><th>Fit</th><th>Tore/xG</th><th>Assists/xA</th>
+      ${mitScore ? "<th>Gesamt</th><th>Potenzial</th><th>Fit</th>" : ""}<th>Tore/xG</th><th>Assists/xA</th>
     </tr></thead><tbody>
       ${treffer.map(p => `<tr onclick="location.hash='#/spieler/${p.id}'">
         <td><strong>${esc(p.vorname)} ${esc(p.nachname)}</strong></td>
@@ -1825,9 +1884,9 @@ function renderPsErgebnis() {
         <td>${jahrgang(p)}</td>
         <td>${fmtMarktwert(p.marktwert)}</td>
         <td>${fmtDatum(p.vertragsende)}</td>
-        <td>${scorePill(gesamtScore(p))}</td>
+        ${mitScore ? `<td>${scorePill(gesamtScore(p))}</td>
         <td>${scorePill(potenzialScore(p))}</td>
-        <td>${scorePill(fortunaFit(p))}</td>
+        <td>${scorePill(fortunaFit(p))}</td>` : ""}
         <td>${p.sbRef ? `${p.sbRef.tore} / ${p.sbRef.xg ?? "–"}` : "–"}</td>
         <td>${p.sbRef ? `${p.sbRef.assists} / ${p.sbRef.xa ?? "–"}` : "–"}</td>
       </tr>`).join("")}
@@ -1931,8 +1990,8 @@ function modalSpielerBearbeiten(id) {
         ${feld("Geburtsdatum", "geburtsdatum", "date", `value="${p.geburtsdatum || ""}"`)}
         ${feld("Nationalität", "nationalitaet", "text", `value="${esc(p.nationalitaet || "")}"`)}
         ${feld("Talent-Kategorie", "talent", "text", "", ["", "A", "B", "C"], p.talent || "")}
-        ${feld("Session-Badge", "sessionBatch", "text", "", BADGES.map(b => b.label), (BADGES.find(b => b.label === p.sessionBatch) ? p.sessionBatch : ""))}
-        ${feld("Gesamtbewertung pro Session (1-10)", "gesamtbewertungSession", "number", `min="0" max="10" value="${p.gesamtbewertungSession || 0}"`)}
+        ${modulAktiv("bewertung") ? feld("Session-Badge", "sessionBatch", "text", "", BADGES.map(b => b.label), (BADGES.find(b => b.label === p.sessionBatch) ? p.sessionBatch : "")) : ""}
+        ${modulAktiv("bewertung") ? feld("Gesamtbewertung pro Session (1-10)", "gesamtbewertungSession", "number", `min="0" max="10" value="${p.gesamtbewertungSession || 0}"`) : ""}
         ${feld("Verein", "verein", "text", `value="${esc(p.verein)}"`)}
         ${feld("Liga", "liga", "text", `value="${esc(p.liga || "")}"`)}
         ${feld("Verband", "verband", "text", `value="${esc(p.verband || "")}"`)}
@@ -1959,8 +2018,9 @@ function modalSpielerBearbeiten(id) {
     p.geburtsdatum = fd.get("geburtsdatum");
     p.nationalitaet = fd.get("nationalitaet") || "Deutschland";
     p.talent = fd.get("talent") || "";
-    p.sessionBatch = fd.get("sessionBatch") || "";
-    p.gesamtbewertungSession = +fd.get("gesamtbewertungSession") || 0;
+    // Ausgeblendete Felder fehlen im Formular – dann den gespeicherten Wert NICHT überschreiben
+    if (fd.has("sessionBatch")) p.sessionBatch = fd.get("sessionBatch") || "";
+    if (fd.has("gesamtbewertungSession")) p.gesamtbewertungSession = +fd.get("gesamtbewertungSession") || 0;
     p.verein = fd.get("verein");
     p.liga = fd.get("liga") || "";
     p.verband = fd.get("verband") || "";
@@ -2319,7 +2379,7 @@ function viewAdmin() {
         <div class="sub">Benutzerverwaltung &amp; System-Konfiguration</div></div>
     </div>
     <div class="tabs">
-      ${[["benutzer","👥 Benutzerverwaltung"],["score","⭐ Fortuna-Score"],["rechte","🔐 Berechtigungen"],["links","🔗 Links & Konfiguration"],["daten","💾 Datenverwaltung"]]
+      ${[["benutzer","👥 Benutzerverwaltung"],["module","🧩 Module"],["score","⭐ Fortuna-Score"],["rechte","🔐 Berechtigungen"],["links","🔗 Links & Konfiguration"],["daten","💾 Datenverwaltung"]]
         .map(([k,t]) => `<button class="${adminTab===k?"active":""}" onclick="switchAdminTab('${k}')">${t}</button>`).join("")}
     </div>
     <div id="admin-tab-inhalt"></div>`;
@@ -2334,6 +2394,7 @@ function renderAdminTab() {
   const el = document.getElementById("admin-tab-inhalt");
   if (!el) return;
   if (adminTab === "benutzer") el.innerHTML = adminTabBenutzer();
+  else if (adminTab === "module") el.innerHTML = adminTabModule();
   else if (adminTab === "score") el.innerHTML = adminTabScore();
   else if (adminTab === "links") el.innerHTML = adminTabLinks();
   else if (adminTab === "daten") el.innerHTML = adminTabDaten();
@@ -2377,6 +2438,37 @@ function adminTabBenutzer() {
       </tbody></table>
     </div>`;
 }
+
+function adminTabModule() {
+  return `
+    <div class="warnung" style="margin-top:16px">
+      <strong>Module ein- und ausblenden:</strong> Ausgeblendete Module verschwinden aus der Oberfläche – alle gespeicherten Daten bleiben vollständig erhalten.
+      Die Einstellung gilt für alle Nutzer und wird live synchronisiert.
+    </div>
+    <div class="card">
+      <table><thead><tr><th>Modul</th><th>Betrifft</th><th>Status</th></tr></thead><tbody>
+        ${MODULE.map(m => `<tr>
+          <td><strong>${m.titel}</strong></td>
+          <td style="font-size:12.5px;color:var(--muted)">${m.beschreibung}</td>
+          <td><label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" ${modulAktiv(m.id) ? "checked" : ""} onchange="modulSetzen('${m.id}', this.checked)">
+            ${modulAktiv(m.id) ? "Sichtbar" : "Ausgeblendet"}
+          </label></td>
+        </tr>`).join("")}
+      </tbody></table>
+    </div>`;
+}
+
+function modulSetzen(id, aktiv) {
+  if (aktuellerNutzer()?.rolle !== "Administrator") return;
+  const modul = MODULE.find(m => m.id === id);
+  if (!modul) return;
+  MODULE_CONFIG = { ...MODULE_CONFIG, [id]: !!aktiv };
+  speichereModuleConfig();
+  renderAdminTab();
+  toast(`${modul.titel} ist jetzt ${aktiv ? "sichtbar" : "ausgeblendet"} – für alle Nutzer.`);
+}
+window.modulSetzen = modulSetzen;
 
 function adminTabScore() {
   const cfg = SCORE_CONFIG;
@@ -2961,11 +3053,12 @@ window.spielerLoeschenBestaetigt = spielerLoeschenBestaetigt;
 
 // ---------- CSV-Export ----------
 function exportiereCSV(spielerListe, dateiname) {
-  const kopf = ["Vorname","Nachname","Position","Jahrgang","Verein","Liga","Pool","Gesamt","Potenzial","Fortuna-Fit","Marktwert (EUR)","Vertragsende","xG","xA","Tore","Assists"];
+  const mitScore = modulAktiv("fortunaScore");
+  const kopf = ["Vorname","Nachname","Position","Jahrgang","Verein","Liga","Pool",...(mitScore ? ["Gesamt","Potenzial","Fortuna-Fit"] : []),"Marktwert (EUR)","Vertragsende","xG","xA","Tore","Assists"];
   const zeilen = spielerListe.map(p => [
     p.vorname, p.nachname, p.hauptposition, jahrgang(p), p.verein, p.liga,
     POOL_LISTEN[p.pool]?.titel || p.pool,
-    gesamtScore(p), potenzialScore(p), fortunaFit(p),
+    ...(mitScore ? [gesamtScore(p), potenzialScore(p), fortunaFit(p)] : []),
     p.marktwert ?? "", p.vertragsende || "",
     p.sbRef?.xg ?? "", p.sbRef?.xa ?? "", p.sbRef?.tore ?? "", p.sbRef?.assists ?? "",
   ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","));
@@ -3243,7 +3336,7 @@ function startApp() {
 // halten app.js/styles.css aber lange im Cache – dann arbeiten zwei Nutzer
 // mit unterschiedlichen Programmständen auf derselben Datenbank.
 // Deshalb: version.json ungecacht abfragen und bei Abweichung zum Neuladen auffordern.
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 
 async function pruefeVersion() {
   try {
@@ -3312,6 +3405,17 @@ function starteLiveSync() {
     route();
   });
 
+  // Fehlt der Zweig in Firebase, gelten die Standardwerte (alles sichtbar) – es wird bewusst
+  // nichts geschrieben; erst ein Admin legt den Zweig durch Umschalten an.
+  abonniereModuleConfig(function(cfg) {
+    if (!cfg) return;
+    const neu = { ...DEFAULT_MODULE_CONFIG, ...cfg };
+    if (JSON.stringify(neu) === JSON.stringify(MODULE_CONFIG)) return;
+    MODULE_CONFIG = neu;
+    localStorage.setItem(MODULE_CONFIG_KEY, JSON.stringify(MODULE_CONFIG));
+    route();
+  });
+
   abonniereFeedbackLinks(function(links) {
     if (!links) { seedeFallsAdmin(speichereFeedbackLinksFirebase, FEEDBACK_LINKS); return; }
     FEEDBACK_LINKS = { ...DEFAULT_FEEDBACK_LINKS, ...links };
@@ -3321,10 +3425,13 @@ function starteLiveSync() {
 
 // ---------- Init ----------
 $("#resetData").addEventListener("click", () => {
+  if (aktuellerNutzer()?.rolle !== "Administrator") return;
   const root = $("#modal-root");
   root.innerHTML = `<div class="modal-backdrop"><div class="modal">
     <h2>Demodaten zurücksetzen?</h2>
-    <p style="margin:16px 0">Alle Änderungen werden verworfen und die ursprünglichen Demodaten neu geladen.</p>
+    <p style="margin:16px 0">Die Demo-Spieler (IDs p1–p8) werden in die <strong>gemeinsame Live-Datenbank</strong> geschrieben.
+    Bereits vorhandene Einträge mit denselben IDs werden dabei <strong>überschrieben</strong>.</p>
+    <p style="margin:0 0 16px;color:var(--rot);font-size:13px">Das ist nur für eine leere Test-Datenbank gedacht. Mache vorher ein Backup (Firebase → Realtime Database → JSON exportieren).</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="schliesseModal()">Abbrechen</button>
       <button class="btn" onclick="schliesseModal();resetDemodaten();SPIELER=ladeSpieler();speichern();route()">Zurücksetzen</button>
